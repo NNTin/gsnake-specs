@@ -9,7 +9,7 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Designer creates a new level JSON file in the appropriate difficulty folder (e.g., `levels/easy/level_003.json`)
-2. Designer plays the level manually using gsnake-cli to find a solution
+2. Designer plays the level interactively to find a solution: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json` (no playback needed for interactive play)
 3. Designer creates a playback JSON file with the solution key sequence (e.g., `playbacks/easy/level_003.json`)
 4. Designer runs the verify command: `cargo run -- verify levels/easy/level_003.json`
 5. System silently replays the playback against the level
@@ -30,10 +30,13 @@ This document describes the user flows for the level management system, covering
 
 1. Designer creates a playback JSON file with the solution key sequence
 2. Designer runs gsnake-cli with recording: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json --input-file playbacks/easy/level_003.json --record`
+  - Optional: specify output path with `--record-output playbacks/easy/level_003.cast`
 3. System starts asciinema recording immediately
 4. System replays the playback, emulating key events
 5. Recording continues for 1 second after the last key event
-6. System saves the .cast file to `playbacks/easy/level_003.cast`
+6. System saves the .cast file:
+  - Default: current directory as `level_003.cast`
+  - With --record-output: specified path
 7. Designer runs render command: `cargo run -- render levels/easy/level_003.json playbacks/easy/level_003.json`
 8. System converts .cast to .svg and saves to `renders/easy/level_003.svg`
 
@@ -49,7 +52,8 @@ This document describes the user flows for the level management system, covering
 
 1. Player runs gsnake-cli with level selection:
   - By file: `cargo run -p gsnake-cli --level-file levels/easy/level_001.json`
-  - By ID: `cargo run -p gsnake-cli --level-id 1`
+  - By ID: `cargo run -p gsnake-cli --level-id 1` (searches for level with JSON id=1)
+  - By index: `cargo run -p gsnake-cli --level-index 1` (loads first level in levels.json)
 2. System loads the single specified level
 3. Game starts in interactive mode
 4. Player uses arrow keys to move, 'r' to reset, 'q' to quit
@@ -71,13 +75,14 @@ This document describes the user flows for the level management system, covering
 
 1. Player navigates to URL with custom levels: `https://example.com/?levelsUrl=https://cdn.example.com/custom-levels.json`
 2. System loads custom levels.json from the specified URL at page load
-3. System displays level grid UI showing all available levels with names and difficulty
-4. Player clicks on a level card to start playing
-5. Game loads and starts the selected level
-6. Player uses arrow keys to play
-7. On level complete: game stays on the completed level, shows completion message
-8. Player can click on another level in the grid to switch
-9. Level grid remains accessible during gameplay
+3. Player clicks a button/icon to open the level selector
+4. System displays full-screen grid overlay showing all available levels with names and difficulty
+5. Player clicks on a level card to start playing
+6. Grid overlay closes, game loads and starts the selected level
+7. Player uses arrow keys to play
+8. On level complete: game stays on the completed level, shows completion message, marks level as completed in localStorage
+9. Player can reopen the level grid anytime to switch levels
+10. Level completion status persists across browser sessions via localStorage
 
 **Exit**: Player completes levels or closes the browser
 
@@ -93,12 +98,14 @@ This document describes the user flows for the level management system, covering
 
 1. Player navigates to the game URL (no custom levels)
 2. System loads default embedded levels.json
-3. System displays level grid UI showing all 12 default levels
-4. Player clicks on a level card (e.g., "Level 3: The Wall")
-5. Game loads and starts the selected level
-6. Player plays the level
-7. On level complete: game stays on the completed level
-8. Player can switch to another level via the level grid anytime
+3. Player clicks a button/icon to open the level selector
+4. System displays full-screen grid overlay showing all 12 default levels with names and difficulty
+5. Player clicks on a level card (e.g., "Level 3: The Wall")
+6. Grid overlay closes, game loads and starts the selected level
+7. Player plays the level
+8. On level complete: game stays on the completed level, marks as completed in localStorage
+9. Player can reopen the level grid anytime to switch levels
+10. Completion status persists across browser sessions
 
 **Exit**: Player completes levels or closes the browser
 
@@ -114,10 +121,11 @@ This document describes the user flows for the level management system, covering
 2. System iterates through all difficulty folders (easy, medium, hard)
 3. For each level with a matching playback file:
   - Silently verifies the level is solvable
-  - Updates levels.toml with verification status
+  - Updates levels.toml with verification status (solved = true/false)
 4. System exits with code 0 if all levels pass, non-zero if any fail
 5. CI runs render commands for each level to generate .cast and .svg files
-6. CI commits updated renders to the repository
+6. CI commits updated levels.toml and renders back to the repository
+7. CI pushes changes to trigger documentation updates
 
 **Exit**: All levels are verified and documentation is updated
 

@@ -41,8 +41,48 @@ The gSnake project currently manages all game levels in a single monolithic `lev
 - Visual SVG renders provide documentation for each level
 - CLI supports selecting and playing individual levels via `--level-file` or `--level-id`
 - CLI can record gameplay sessions with built-in asciinema integration
-- Web interface can load custom levels.json files and select specific levels
-- CI pipeline automatically verifies level integrity and generates documentation
+- Web interface can load custom levels.json files and select specific levels via full-screen grid overlay
+- Web interface tracks level completion in browser localStorage
+- CI pipeline automatically verifies level integrity, updates metadata, and generates documentation
 - The aggregated `levels.json` can be generated from individual level files with difficulty filtering
 - All changes maintain backward compatibility with existing gsnake-web functionality
+
+### Repository Structure
+
+- `gsnake-levels` and `gsnake-core` are sibling repositories in the workspace
+- `gsnake-levels` contains level files, playbacks, renders, and level management CLI
+- `gsnake-core` contains the game engine and player CLI
+- Users run commands from the workspace root with relative paths to each repository
+
+### Data Formats
+
+**levels.toml Structure** (one per difficulty folder):
+
+```toml
+# levels/easy/levels.toml
+[[level]]
+id = "level_001"
+file = "level_001.json"
+author = "designer_name"
+solved = true
+difficulty = "easy"
+tags = ["tutorial", "basic"]
+description = "Learn basic movement"
+```
+
+**Playback JSON Format** (current format, unchanged):
+
+```json
+[
+  {"key": "Right", "delay_ms": 200},
+  {"key": "Down", "delay_ms": 200}
+]
+```
+
+**Contract Interface Extensions**:
+
+- Expose level metadata (name, difficulty) to frontend
+- Support loading custom levels.json via URL parameter
+- Support selecting specific level by ID
+- Track and report level completion status
 
