@@ -1,82 +1,72 @@
 # Repo Architecture (Interdependencies)
 
-```mermaidgraph TD
+## Dependency Resolution Modes
+
+The architecture supports two dependency resolution modes:
+
+**🏠 Root Repository Mode (Local Paths)**
+- Detected when `../.git` exists
+- Uses local path dependencies via auto-detection
+- Enables rapid development without network access
+
+**🌐 Standalone Mode (Git Dependencies)**
+- Used when submodule is cloned independently
+- Uses git branch dependencies (target: `main` branch)
+- Enables independent builds and CI
+
+```mermaid
+graph TD
   %% Submodules / repos (each in its own subgraph)
-  subgraph ROOT_REPO["gsnake (root repo)"]
-    CORE["gsnake-core (root folder)"]
-    SCRIPTS["scripts/ (root folder)"]
-    WASM_PKG["gsnake-core/engine/bindings/wasm/pkg (build output)"]
+  subgraph ROOT_REPO["🏠 Root Repository Mode"]
+    CORE["gsnake-core"]
+    SCRIPTS["scripts/"]
+    WASM_PKG["gsnake-core/engine/bindings/wasm/pkg"]
     FIXTURES["gsnake-core/engine/core/tests/fixtures"]
-    LEVELS_REPO
-    WEB_REPO
-    SPECS_REPO
-    PY_REPO
-    EDITOR_REPO
+    LEVELS_LOCAL["gsnake-levels"]
+    WEB_LOCAL["gsnake-web"]
+    SPECS_LOCAL["gsnake-specs"]
+    EDITOR_LOCAL["gsnake-editor"]
   end
 
-  subgraph LEVELS_REPO["gsnake-levels (submodule)"]
-    LEVELS["gsnake-levels"]
+  subgraph STANDALONE["🌐 Standalone Mode"]
+    direction TB
+    LEVELS_SA["gsnake-levels<br/>(git clone)"]
+    WEB_SA["gsnake-web<br/>(git clone)"]
+    EDITOR_SA["gsnake-editor<br/>(git clone)"]
+    CORE_GIT["gsnake-core<br/>(via git dep)"]
+    WASM_GIT["WASM pkg<br/>(via git dep)"]
   end
 
-  subgraph WEB_REPO["gsnake-web (submodule)"]
-    WEB["gsnake-web"]
-  end
-
-  subgraph SPECS_REPO["gsnake-specs (submodule)"]
-    SPECS["gsnake-specs"]
-  end
-
-  subgraph PY_REPO["gsnake-python (submodule, empty/ignored)"]
-    PY["gsnake-python"]
-  end
-
-  subgraph EDITOR_REPO["gsnake-editor (submodule)"]
-    EDITOR["gsnake-editor"]
-  end
-
-  %% Core relationships
+  %% Root repo relationships
   CORE --> WASM_PKG
+  LEVELS_LOCAL -->|path: ../gsnake-core| CORE
+  WEB_LOCAL -->|file: ../gsnake-core/.../pkg| WASM_PKG
+  WEB_LOCAL --> SCRIPTS
+  EDITOR_LOCAL -->|HTTP to| WEB_LOCAL
+  SCRIPTS -->|generate types/build| CORE
+  FIXTURES -->|contract fixtures| WEB_LOCAL
 
-  %% gsnake-web dependencies
-  WEB --> CORE
-  WEB --> SCRIPTS
-  SCRIPTS -->|generate_ts_types.py| WEB
-  SCRIPTS -->|build_wasm.py| WASM_PKG
-  SCRIPTS -->|build_core.py| CORE
-  SCRIPTS -->|"generate_ts_types.py (cargo export_ts)"| CORE
-  WASM_PKG -->|file: dependency| WEB
-  FIXTURES -->|contract fixtures| WEB
-  CORE -->|export_ts writes types| WEB
+  %% Standalone relationships
+  LEVELS_SA -->|git: branch=main| CORE_GIT
+  WEB_SA -->|git: branch=main| WASM_GIT
+  EDITOR_SA -->|HTTP to deployed| WEB_SA
 
-  %% gsnake-levels dependency
-  LEVELS -->|path dep ../gsnake-core| CORE
-  LEVELS -->|runs gsnake-cli via manifest| CORE
+  %% Resolution status
+  RESOLVED["✅ Resolved: All submodules<br/>can build standalone"]
+  LEVELS_SA --> RESOLVED
+  WEB_SA --> RESOLVED
+  EDITOR_SA --> RESOLVED
 
-  %% gsnake-editor (submodule)
-  EDITOR -->|test-mode relies on| WEB
+  %% Legend
+  LEGEND["<b>Legend</b><br/>Solid lines: Dependencies<br/>Dashed lines: Optional/Test"]
 
-  %% Specs
-  SPECS -->|docs only| CORE
-
-  %% Current pain
-  WEB -.->|cannot build alone| CORE
-  LEVELS -.->|cannot build alone| CORE
-  EDITOR -.->|cannot build alone| CORE
-
-  %% Future goal
-  GOAL[Goal: publish/build dependencies externally]
-  CORE --> GOAL
-  WEB --> GOAL
-  LEVELS --> GOAL
-  EDITOR --> GOAL
-
-  %% Subgraph styling
-  style ROOT_REPO fill:#e6f2ff,stroke:#1e88e5,stroke-width:2px
-  style LEVELS_REPO fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
-  style WEB_REPO fill:#e8f5e9,stroke:#43a047,stroke-width:2px
-  style SPECS_REPO fill:#fff3e0,stroke:#fb8c00,stroke-width:2px
-  style PY_REPO fill:#fce4ec,stroke:#d81b60,stroke-width:2px
-  style EDITOR_REPO fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
+  %% Styling
+  style ROOT_REPO fill:#e6f2ff,stroke:#1e88e5,stroke-width:3px
+  style STANDALONE fill:#e8f5e9,stroke:#43a047,stroke-width:3px
+  style RESOLVED fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+  style LEGEND fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+  style CORE_GIT fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
+  style WASM_GIT fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
 ```
 
 ## Dependency Resolution Strategy
