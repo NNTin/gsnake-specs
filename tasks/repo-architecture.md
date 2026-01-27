@@ -155,3 +155,112 @@ gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", packag
   }
 }
 ```
+
+## Troubleshooting
+
+### Git Dependency Not Found
+
+**Symptom:** Build fails with error like `failed to load source for dependency` or `repository not found`.
+
+**Causes and Solutions:**
+- **Incorrect branch name**: Verify the branch name is `main` (not `master` or other)
+- **Repository access**: Ensure you have access to `https://github.com/nntin/gsnake`
+- **Network issues**: Check your internet connection and GitHub access
+- **Submodule not published**: Verify the dependency code exists in the main branch
+
+**Verification:**
+```bash
+# Test repository access
+git ls-remote https://github.com/nntin/gsnake refs/heads/main
+
+# Verify submodule path exists
+git clone --depth 1 --branch main https://github.com/nntin/gsnake /tmp/test-repo
+ls /tmp/test-repo/gsnake-core
+```
+
+### Local Override Not Working
+
+**Symptom:** Root repository build still uses git dependencies instead of local paths.
+
+**Causes and Solutions:**
+- **Detection script not running**: Verify preinstall/build scripts are executing
+- **Missing sibling directories**: Check that `../gsnake-core/.git` exists
+- **Cache issues**: Clear build caches and reinstall dependencies
+
+**Verification for Rust:**
+```bash
+cd gsnake-levels
+# Check if .cargo/config.toml exists with [patch] section
+cat .cargo/config.toml
+# Should show: [patch."https://github.com/nntin/gsnake"]
+```
+
+**Verification for JavaScript:**
+```bash
+cd gsnake-web
+# Check package.json after npm install
+cat package.json | grep gsnake-core
+# Should show: "file:../gsnake-core/..." if in root repo
+```
+
+### WASM Build Fails
+
+**Symptom:** `wasm-pack build` fails or WASM target not found.
+
+**Causes and Solutions:**
+- **Missing Rust target**: Install the WASM target
+  ```bash
+  rustup target add wasm32-unknown-unknown
+  ```
+- **Missing wasm-pack**: Install wasm-pack
+  ```bash
+  cargo install wasm-pack
+  ```
+- **Outdated toolchain**: Update Rust toolchain
+  ```bash
+  rustup update stable
+  ```
+
+### Forcing Standalone Mode
+
+To test standalone builds while in the root repository (ignoring local overrides):
+
+**Rust (Cargo):**
+```bash
+# Temporarily rename .git to disable detection
+mv ../.git ../.git.disabled
+cargo clean
+cargo build
+mv ../.git.disabled ../.git
+```
+
+**JavaScript (npm):**
+```bash
+# Set environment variable to skip detection
+FORCE_GIT_DEPS=1 npm install
+# Or temporarily rename .git
+mv ../.git ../.git.disabled
+rm -rf node_modules package-lock.json
+npm install
+mv ../.git.disabled ../.git
+```
+
+### Verifying Dependency Mode
+
+**Check which mode is active:**
+
+**Rust:**
+```bash
+cd gsnake-levels
+cargo tree | grep gsnake-core
+# Git mode: shows "https://github.com/nntin/gsnake?branch=main#..."
+# Local mode: shows "path+file:///path/to/gsnake-core"
+```
+
+**JavaScript:**
+```bash
+cd gsnake-web
+npm ls gsnake-core
+# Git mode: shows "git+https://github.com/..."
+# Local mode: shows "file:../gsnake-core/..."
+```
