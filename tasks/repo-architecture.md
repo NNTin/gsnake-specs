@@ -146,6 +146,196 @@ gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", packag
 }
 ```
 
+## Local Development Overrides
+
+When working in the root repository with submodules checked out, the build system automatically overrides git dependencies with local path dependencies. This enables fast iteration without network access or waiting for git operations.
+
+### Detection Mechanism
+
+Each submodule's build scripts check for the presence of the root repository:
+
+**Detection Criteria:**
+1. `../.git` exists (indicates parent directory is a git repository)
+2. `../gsnake-core` exists (indicates gsnake-core is present as sibling)
+3. If both are true → **Root repository mode** (use local paths)
+4. Otherwise → **Standalone mode** (use git dependencies)
+
+**Detection Script:**
+
+The root repository provides a shared detection script at `scripts/detect-repo-context.sh`:
+
+```bash
+#!/bin/bash
+# Usage from any submodule:
+source ../../scripts/detect-repo-context.sh
+
+if [ "$GSNAKE_ROOT_REPO" = "true" ]; then
+  echo "Root repo mode - local paths available"
+  echo "  GSNAKE_CORE_PATH: $GSNAKE_CORE_PATH"
+  echo "  GSNAKE_WEB_PATH: $GSNAKE_WEB_PATH"
+  # ... use local paths
+else
+  echo "Standalone mode - use git dependencies"
+fi
+```
+
+### Implementation by Language
+
+#### Rust (Cargo) - Used by gsnake-levels
+
+**Mechanism:** Build script generates `.cargo/config.toml` with `[patch]` section
+
+**Implementation (build.rs):**
+```rust
+use std::path::Path;
+
+fn main() {
+    // Detect root repository
+    let in_root_repo = Path::new("../.git").exists()
+        && Path::new("../gsnake-core/Cargo.toml").exists();
+
+    if in_root_repo {
+        // Generate .cargo/config.toml with patch
+        let config_content = r#"
+[patch."https://github.com/nntin/gsnake"]
+gsnake-core = { path = "../gsnake-core" }
+"#;
+        std::fs::create_dir_all(".cargo").unwrap();
+        std::fs::write(".cargo/config.toml", config_content).unwrap();
+        println!("cargo:warning=Using local gsnake-core from ../gsnake-core");
+    } else {
+        // Remove patch if it exists (standalone mode)
+        let _ = std::fs::remove_file(".cargo/config.toml");
+    }
+}
+```
+
+**How it works:**
+1. `build.rs` runs before compilation
+2. Detects root repository context
+3. Creates `.cargo/config.toml` with `[patch]` section
+4. Cargo automatically redirects git dependency to local path
+5. No changes to `Cargo.toml` required
+
+**Result:**
+```bash
+# Root repo mode
+cd gsnake-levels
+cargo build
+# Uses ../gsnake-core (no network access needed)
+
+# Standalone mode
+git clone https://github.com/nntin/gsnake-levels.git
+cd gsnake-levels
+cargo build
+# Uses git dependency from GitHub
+```
+
+#### JavaScript/TypeScript (npm) - Used by gsnake-web, gsnake-editor
+
+**Mechanism:** Preinstall script modifies `package.json` before dependency resolution
+
+**Implementation (scripts/detect-local-deps.js):**
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+// Detection
+const isRootRepo = fs.existsSync('../.git') && fs.existsSync('../gsnake-core');
+
+if (isRootRepo) {
+  console.log('Root repository detected - using local dependencies');
+
+  // Read package.json
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+  // Override git dependency with local path
+  pkg.dependencies['gsnake-core'] = 'file:../gsnake-core/engine/bindings/wasm/pkg';
+
+  // Write back
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  console.log('Updated package.json to use local gsnake-core');
+} else {
+  console.log('Standalone mode - using git dependency');
+  // Restore git dependency if needed
+}
+```
+
+**Integration (package.json):**
+```json
+{
+  "scripts": {
+    "preinstall": "node scripts/detect-local-deps.js"
+  }
+}
+```
+
+**How it works:**
+1. `preinstall` hook runs before `npm install`
+2. Script detects root repository context
+3. Modifies `package.json` in-place
+4. npm then installs with updated dependency
+5. Next `npm install` re-runs detection (stateless)
+
+**Result:**
+```bash
+# Root repo mode
+cd gsnake-web
+npm install
+# package.json updated to: "gsnake-core": "file:../gsnake-core/..."
+
+# Standalone mode
+git clone https://github.com/nntin/gsnake-web.git
+cd gsnake-web
+npm install
+# Uses: "gsnake-core": "git+https://github.com/..."
+```
+
+### Benefits
+
+1. **Fast Local Development:** No network access needed, instant dependency updates
+2. **Seamless Switching:** Same commands work in both modes (no special flags)
+3. **Consistent Behavior:** CI uses standalone mode, local dev uses root repo mode
+4. **Zero Configuration:** Developers don't need to manually configure paths
+5. **Safe Defaults:** Git dependencies work out-of-the-box for standalone builds
+
+### Verification
+
+**Check which mode is active:**
+
+**Rust:**
+```bash
+cd gsnake-levels
+cargo tree | grep gsnake-core
+# Root repo: path+file:///path/to/gsnake-core
+# Standalone: https://github.com/nntin/gsnake?branch=main#...
+```
+
+**JavaScript:**
+```bash
+cd gsnake-web
+npm ls gsnake-core
+# Root repo: file:../gsnake-core/...
+# Standalone: git+https://github.com/...
+```
+
+**Force standalone mode (for testing):**
+```bash
+# Temporarily disable detection
+mv ../.git ../.git.disabled
+cargo clean  # or: rm -rf node_modules
+cargo build  # or: npm install
+mv ../.git.disabled ../.git
+```
+
+### Submodule-Specific Details
+
+For implementation details specific to each submodule, see:
+- **gsnake-levels** (Rust): [gsnake-levels/README.md](../../gsnake-levels/README.md) - Local Override Detection section
+- **gsnake-web** (JavaScript): [gsnake-web/README.md](../../gsnake-web/README.md) - Auto-Detection Behavior section
+- **gsnake-editor** (JavaScript): [gsnake-editor/README.md](../../gsnake-editor/README.md) - Standalone Build section
+
 ## Troubleshooting
 
 ### Git Dependency Not Found
