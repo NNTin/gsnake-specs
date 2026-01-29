@@ -34,7 +34,7 @@ graph TD
     WEB_SA["gsnake-web<br/>(git clone)"]
     EDITOR_SA["gsnake-editor<br/>(git clone)"]
     CORE_GIT["gsnake-core<br/>(via git dep)"]
-    WASM_GIT["WASM pkg<br/>(via git dep)"]
+    WASM_GIT["WASM pkg<br/>(downloaded)"]
   end
 
   %% Root repo relationships
@@ -48,7 +48,7 @@ graph TD
 
   %% Standalone relationships
   LEVELS_SA -->|git: branch=main| CORE_GIT
-  WEB_SA -->|git: branch=main| WASM_GIT
+  WEB_SA -->|download: branch=main| WASM_GIT
   EDITOR_SA -->|HTTP to deployed| WEB_SA
 
   %% Resolution status
@@ -73,9 +73,9 @@ graph TD
 
 The gSnake project uses a **dual-mode dependency resolution system** to support both standalone submodule builds and integrated root repository development.
 
-### Git Branch Dependencies (Standalone Mode)
+### Standalone Mode Dependencies
 
-When submodules are built independently (outside the root repository), they use git branch dependencies to access code from other submodules.
+When submodules are built independently (outside the root repository), they resolve dependencies without local sibling repos.
 
 #### Rust (Cargo.toml)
 ```toml
@@ -87,10 +87,11 @@ gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", packag
 ```json
 {
   "dependencies": {
-    "gsnake-core": "git+https://github.com/nntin/gsnake.git#main:gsnake-core/engine/bindings/wasm/pkg"
+    "gsnake-wasm": "file:./vendor/gsnake-wasm"
   }
 }
 ```
+In standalone mode, the preinstall script downloads prebuilt WASM artifacts from the `main` branch into `vendor/gsnake-wasm` and points the dependency there.
 
 ### Branch Strategy
 
@@ -107,7 +108,7 @@ When submodules are built within the root repository, they automatically detect 
 - Check if `../.git` exists (indicates root repository)
 - Check if sibling submodules exist (e.g., `../gsnake-core/.git`)
 - If both conditions are met: use local paths
-- Otherwise: use git dependencies
+- Otherwise: use git dependencies (Rust) and download prebuilt WASM (JavaScript)
 
 **Rust Implementation:**
 - Build scripts create `.cargo/config.toml` with `[patch]` section
@@ -135,13 +136,13 @@ version = "0.1.0"
 gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", package = "gsnake-core" }
 ```
 
-#### JavaScript Git Dependency (gsnake-web/package.json)
+#### JavaScript Standalone Dependency (gsnake-web/package.json)
 ```json
 {
   "name": "gsnake-web",
   "version": "1.0.0",
   "dependencies": {
-    "gsnake-core": "git+https://github.com/nntin/gsnake.git#main:gsnake-core/engine/bindings/wasm/pkg"
+    "gsnake-wasm": "file:./vendor/gsnake-wasm"
   }
 }
 ```
@@ -158,7 +159,7 @@ Each submodule's build scripts check for the presence of the root repository:
 1. `../.git` exists (indicates parent directory is a git repository)
 2. `../gsnake-core` exists (indicates gsnake-core is present as sibling)
 3. If both are true → **Root repository mode** (use local paths)
-4. Otherwise → **Standalone mode** (use git dependencies)
+4. Otherwise → **Standalone mode** (use git dependencies for Rust; download prebuilt WASM for JS)
 
 **Detection Script:**
 
@@ -233,7 +234,7 @@ cargo build
 
 #### JavaScript/TypeScript (npm) - Used by gsnake-web, gsnake-editor
 
-**Mechanism:** Preinstall script modifies `package.json` before dependency resolution
+**Mechanism:** Preinstall script modifies `package.json` before dependency resolution and downloads prebuilt WASM when standalone
 
 **Implementation (scripts/detect-local-deps.js):**
 ```javascript
@@ -250,15 +251,15 @@ if (isRootRepo) {
   const pkgPath = path.join(__dirname, '..', 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-  // Override git dependency with local path
-  pkg.dependencies['gsnake-core'] = 'file:../gsnake-core/engine/bindings/wasm/pkg';
+  // Override dependency with local path
+  pkg.dependencies['gsnake-wasm'] = 'file:../gsnake-core/engine/bindings/wasm/pkg';
 
   // Write back
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-  console.log('Updated package.json to use local gsnake-core');
+  console.log('Updated package.json to use local gsnake-wasm');
 } else {
-  console.log('Standalone mode - using git dependency');
-  // Restore git dependency if needed
+  console.log('Standalone mode - downloading prebuilt WASM');
+  // Download WASM into vendor/gsnake-wasm and set file: dependency
 }
 ```
 
@@ -283,13 +284,13 @@ if (isRootRepo) {
 # Root repo mode
 cd gsnake-web
 npm install
-# package.json updated to: "gsnake-core": "file:../gsnake-core/..."
+# package.json updated to: "gsnake-wasm": "file:../gsnake-core/..."
 
 # Standalone mode
 git clone https://github.com/nntin/gsnake-web.git
 cd gsnake-web
 npm install
-# Uses: "gsnake-core": "git+https://github.com/..."
+# Uses: "gsnake-wasm": "file:./vendor/gsnake-wasm"
 ```
 
 ### Benefits
@@ -298,7 +299,7 @@ npm install
 2. **Seamless Switching:** Same commands work in both modes (no special flags)
 3. **Consistent Behavior:** CI uses standalone mode, local dev uses root repo mode
 4. **Zero Configuration:** Developers don't need to manually configure paths
-5. **Safe Defaults:** Git dependencies work out-of-the-box for standalone builds
+5. **Safe Defaults:** Prebuilt WASM downloads work out-of-the-box for standalone builds
 
 ### Verification
 
@@ -379,7 +380,7 @@ cat .cargo/config.toml
 ```bash
 cd gsnake-web
 # Check package.json after npm install
-cat package.json | grep gsnake-core
+cat package.json | grep gsnake-wasm
 # Should show: "file:../gsnake-core/..." if in root repo
 ```
 
@@ -440,8 +441,8 @@ cargo tree | grep gsnake-core
 **JavaScript:**
 ```bash
 cd gsnake-web
-npm ls gsnake-core
-# Git mode: shows "git+https://github.com/..."
+npm ls gsnake-wasm
+# Standalone mode: shows "file:./vendor/gsnake-wasm"
 # Local mode: shows "file:../gsnake-core/..."
 ```
 
@@ -458,7 +459,7 @@ Each submodule can be cloned and built independently without requiring the root 
 
 **For JavaScript submodules (gsnake-web, gsnake-editor):**
 - Node.js 18+ and npm
-- Git (for fetching git dependencies)
+- Network access to GitHub (for downloading prebuilt WASM in standalone mode)
 
 **For gsnake-specs:**
 - No build dependencies (pure Markdown documentation)
@@ -511,7 +512,7 @@ cargo run --example render_level
 git clone https://github.com/nntin/gsnake-web.git
 cd gsnake-web
 
-# Install (automatically fetches prebuilt WASM from git)
+# Install (downloads prebuilt WASM into vendor/)
 npm install
 
 # Build
@@ -529,7 +530,7 @@ npm run dev
 
 **Details:** [gsnake-web/README.md](../../gsnake-web/README.md)
 
-**Note:** Standalone mode expects prebuilt WASM artifacts in the git dependency. These are built and committed to the main branch via CI.
+**Note:** Standalone mode expects prebuilt WASM artifacts in the main branch. These are built and committed via CI, then downloaded during install.
 
 #### gsnake-editor (Svelte Level Editor)
 
@@ -651,7 +652,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
-- Fetches prebuilt WASM from main branch via git dependency
+- Downloads prebuilt WASM from main branch into `vendor/gsnake-wasm`
 - Runs contract tests to validate Rust/TypeScript interface
 - Tests auto-detection mechanism (preinstall script)
 
@@ -736,8 +737,8 @@ cd gsnake-levels && act -j test
 
 1. **✅ WEB cannot build standalone**
    - **Was:** Required ../gsnake-core WASM to be built locally
-   - **Now:** Uses git dependency with prebuilt WASM artifacts
-   - **How:** Preinstall script switches between git and local paths
+   - **Now:** Downloads prebuilt WASM artifacts into `vendor/gsnake-wasm`
+   - **How:** Preinstall script switches between local paths and vendored downloads
 
 2. **✅ LEVELS cannot build standalone**
    - **Was:** Required ../gsnake-core source code to be present
