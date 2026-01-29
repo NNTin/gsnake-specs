@@ -79,3 +79,67 @@ Unlike other gSnake submodules, gsnake-specs:
 - Is immediately usable after clone
 
 This is intentional - documentation should be accessible without build tools.
+
+## CI/CD
+
+### GitHub Actions Workflow
+
+gsnake-specs has a CI workflow that validates documentation quality:
+
+**Location:** `.github/workflows/ci.yml`
+
+**Jobs:**
+- **markdown-lint**: Validates Markdown syntax and formatting
+- **link-check**: Checks for broken internal and external links
+- **validate**: Verifies repository structure and key files exist
+
+**Triggers:**
+- Push to `main` branch
+- Pull requests
+- Manual dispatch (`workflow_dispatch`)
+
+### Testing CI Locally with nektos/act
+
+You can test the CI workflow locally using [nektos/act](https://github.com/nektos/act):
+
+```bash
+# Install act (if not already installed)
+# Ubuntu/Debian: sudo apt install act
+# macOS: brew install act
+
+# Test markdown-lint job
+cd gsnake-specs
+act -j markdown-lint
+
+# Test link-check job
+act -j link-check
+
+# Test validate job
+act -j validate
+
+# Test all jobs
+act
+```
+
+**Known limitations with act:**
+- Link checking may behave differently locally vs GitHub Actions (network/cache differences)
+- Some GitHub Actions features may not work identically in local Docker environment
+- External link validation may fail due to rate limits when testing locally
+
+### Manual Validation
+
+You can manually validate documentation without CI:
+
+```bash
+# Install markdownlint-cli globally
+npm install -g markdownlint-cli
+
+# Lint all markdown files
+markdownlint '**/*.md' --ignore node_modules
+
+# Install markdown-link-check
+npm install -g markdown-link-check
+
+# Check links in a specific file
+markdown-link-check README.md
+```
