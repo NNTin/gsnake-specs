@@ -1,0 +1,19 @@
+{
+  "name": "gsnake-specs",
+  "version": "1.0.0",
+  "description": "Documentation and specifications for gSnake project",
+  "scripts": {
+    "lint:md": "markdownlint-cli2 '**/*.md' '!**/node_modules/**'",
+    "check:links": "markdown-link-check -c .mlc.json **/*.md"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.17.2",
+    "markdown-link-check": "^3.13.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NNTin/gsnake-specs"
+  },
+  "author": "",
+  "license": "MIT"
+}
