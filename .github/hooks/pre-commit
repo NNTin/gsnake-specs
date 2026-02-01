@@ -1,0 +1,42 @@
+#!/bin/bash
+# Pre-commit hook for gsnake-specs
+# This hook formats and lints Markdown files using Python tooling
+# Tests are NOT run for speed
+
+set -e  # Exit immediately on first failure
+
+echo "Running pre-commit checks for gsnake-specs..."
+
+# Check if Python is available
+if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
+    echo "Error: Python is not installed or not in PATH"
+    echo "Please install Python 3.8+ to use this pre-commit hook"
+    echo "See pyproject.toml for installation instructions"
+    exit 1
+fi
+
+# Check if mdformat is available
+if ! command -v mdformat &> /dev/null; then
+    echo "Error: mdformat is not installed"
+    echo "Please install Python dependencies: pip install -e ."
+    echo "See pyproject.toml for installation instructions"
+    exit 1
+fi
+
+# Check if pymarkdown is available
+if ! command -v pymarkdown &> /dev/null; then
+    echo "Error: pymarkdownlnt is not installed"
+    echo "Please install Python dependencies: pip install -e ."
+    echo "See pyproject.toml for installation instructions"
+    exit 1
+fi
+
+# Run mdformat check (fails on formatting issues)
+echo "Checking Markdown formatting with mdformat..."
+mdformat --check .
+
+# Run pymarkdown lint (fails on lint errors)
+echo "Linting Markdown files with pymarkdownlnt..."
+pymarkdown scan .
+
+echo "All pre-commit checks passed!"
