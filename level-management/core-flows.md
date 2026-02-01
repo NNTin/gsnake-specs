@@ -9,18 +9,18 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Designer creates a new level JSON file in the appropriate difficulty folder (e.g., `levels/easy/level_003.json`)
-2. Designer plays the level interactively to find a solution: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json` (no playback needed for interactive play)
-3. Designer creates a playback JSON file with the solution key sequence (e.g., `playbacks/easy/level_003.json`)
-4. Designer runs the verify command: `cargo run -- verify levels/easy/level_003.json`
-5. System silently replays the playback against the level
-6. On success: exits with code 0, updates `levels.toml` setting `solved = true`
-7. On failure: exits with non-zero code, designer debugs and repeats from step 3
-8. Designer adds metadata to `levels.toml` (author, difficulty, tags, description)
-9. Designer runs render command to generate visual documentation
+1. Designer plays the level interactively to find a solution: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json` (no playback needed for interactive play)
+1. Designer creates a playback JSON file with the solution key sequence (e.g., `playbacks/easy/level_003.json`)
+1. Designer runs the verify command: `cargo run -- verify levels/easy/level_003.json`
+1. System silently replays the playback against the level
+1. On success: exits with code 0, updates `levels.toml` setting `solved = true`
+1. On failure: exits with non-zero code, designer debugs and repeats from step 3
+1. Designer adds metadata to `levels.toml` (author, difficulty, tags, description)
+1. Designer runs render command to generate visual documentation
 
 **Exit**: Level is verified, metadata is updated, ready for inclusion in levels.json
 
----
+______________________________________________________________________
 
 ## Flow 2: Level Designer Records a Solution
 
@@ -29,20 +29,24 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Designer creates a playback JSON file with the solution key sequence
-2. Designer runs gsnake-cli with recording: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json --input-file playbacks/easy/level_003.json --record`
-  - Optional: specify output path with `--record-output playbacks/easy/level_003.cast`
+1. Designer runs gsnake-cli with recording: `cargo run -p gsnake-cli --level-file levels/easy/level_003.json --input-file playbacks/easy/level_003.json --record`
+
+- Optional: specify output path with `--record-output playbacks/easy/level_003.cast`
+
 3. System starts asciinema recording immediately
-4. System replays the playback, emulating key events
-5. Recording continues for 1 second after the last key event
-6. System saves the .cast file:
-  - Default: current directory as `level_003.cast`
-  - With --record-output: specified path
+1. System replays the playback, emulating key events
+1. Recording continues for 1 second after the last key event
+1. System saves the .cast file:
+
+- Default: current directory as `level_003.cast`
+- With --record-output: specified path
+
 7. Designer runs render command: `cargo run -- render levels/easy/level_003.json playbacks/easy/level_003.json`
-8. System converts .cast to .svg and saves to `renders/easy/level_003.svg`
+1. System converts .cast to .svg and saves to `renders/easy/level_003.svg`
 
 **Exit**: Visual documentation (SVG) is generated for the level
 
----
+______________________________________________________________________
 
 ## Flow 3: CLI Player Plays a Specific Level
 
@@ -51,21 +55,23 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Player runs gsnake-cli with level selection:
-  - By file: `cargo run -p gsnake-cli --level-file levels/easy/level_001.json`
-  - By ID: `cargo run -p gsnake-cli --level-id 1` (searches for level with JSON id=1)
-  - By index: `cargo run -p gsnake-cli --level-index 1` (loads first level in levels.json)
+
+- By file: `cargo run -p gsnake-cli --level-file levels/easy/level_001.json`
+- By ID: `cargo run -p gsnake-cli --level-id 1` (searches for level with JSON id=1)
+- By index: `cargo run -p gsnake-cli --level-index 1` (loads first level in levels.json)
+
 2. System loads the single specified level
-3. Game starts in interactive mode
-4. Player uses arrow keys to move, 'r' to reset, 'q' to quit
-5. On level complete: game stays on the completed level (no auto-advance)
-6. Player can reset to replay or quit
-7. On quit: system exits with code 0 if level was completed, non-zero otherwise
+1. Game starts in interactive mode
+1. Player uses arrow keys to move, 'r' to reset, 'q' to quit
+1. On level complete: game stays on the completed level (no auto-advance)
+1. Player can reset to replay or quit
+1. On quit: system exits with code 0 if level was completed, non-zero otherwise
 
 **Exit**: Player completes or quits the level
 
 **Note**: When no level is specified, system loads all levels from levels.json and cycles through them (backward compatible behavior)
 
----
+______________________________________________________________________
 
 ## Flow 4: Web Player Uses Custom Levels
 
@@ -74,21 +80,21 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Player navigates to URL with custom levels: `https://example.com/?levelsUrl=https://cdn.example.com/custom-levels.json`
-2. System loads custom levels.json from the specified URL at page load
-3. Player clicks a button/icon to open the level selector
-4. System displays full-screen grid overlay showing all available levels with names and difficulty
-5. Player clicks on a level card to start playing
-6. Grid overlay closes, game loads and starts the selected level
-7. Player uses arrow keys to play
-8. On level complete: game stays on the completed level, shows completion message, marks level as completed in localStorage
-9. Player can reopen the level grid anytime to switch levels
-10. Level completion status persists across browser sessions via localStorage
+1. System loads custom levels.json from the specified URL at page load
+1. Player clicks a button/icon to open the level selector
+1. System displays full-screen grid overlay showing all available levels with names and difficulty
+1. Player clicks on a level card to start playing
+1. Grid overlay closes, game loads and starts the selected level
+1. Player uses arrow keys to play
+1. On level complete: game stays on the completed level, shows completion message, marks level as completed in localStorage
+1. Player can reopen the level grid anytime to switch levels
+1. Level completion status persists across browser sessions via localStorage
 
 **Exit**: Player completes levels or closes the browser
 
 **Note**: Without `?levelsUrl` parameter, system loads default embedded levels.json
 
----
+______________________________________________________________________
 
 ## Flow 5: Web Player Selects Levels (Default Levels)
 
@@ -97,19 +103,19 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Player navigates to the game URL (no custom levels)
-2. System loads default embedded levels.json
-3. Player clicks a button/icon to open the level selector
-4. System displays full-screen grid overlay showing all 12 default levels with names and difficulty
-5. Player clicks on a level card (e.g., "Level 3: The Wall")
-6. Grid overlay closes, game loads and starts the selected level
-7. Player plays the level
-8. On level complete: game stays on the completed level, marks as completed in localStorage
-9. Player can reopen the level grid anytime to switch levels
-10. Completion status persists across browser sessions
+1. System loads default embedded levels.json
+1. Player clicks a button/icon to open the level selector
+1. System displays full-screen grid overlay showing all 12 default levels with names and difficulty
+1. Player clicks on a level card (e.g., "Level 3: The Wall")
+1. Grid overlay closes, game loads and starts the selected level
+1. Player plays the level
+1. On level complete: game stays on the completed level, marks as completed in localStorage
+1. Player can reopen the level grid anytime to switch levels
+1. Completion status persists across browser sessions
 
 **Exit**: Player completes levels or closes the browser
 
----
+______________________________________________________________________
 
 ## Flow 6: CI Verifies All Levels
 
@@ -118,18 +124,20 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. CI runs verify-all command: `cargo run -- verify-all`
-2. System iterates through all difficulty folders (easy, medium, hard)
-3. For each level with a matching playback file:
-  - Silently verifies the level is solvable
-  - Updates levels.toml with verification status (solved = true/false)
+1. System iterates through all difficulty folders (easy, medium, hard)
+1. For each level with a matching playback file:
+
+- Silently verifies the level is solvable
+- Updates levels.toml with verification status (solved = true/false)
+
 4. System exits with code 0 if all levels pass, non-zero if any fail
-5. CI runs render commands for each level to generate .cast and .svg files
-6. CI commits updated levels.toml and renders back to the repository
-7. CI pushes changes to trigger documentation updates
+1. CI runs render commands for each level to generate .cast and .svg files
+1. CI commits updated levels.toml and renders back to the repository
+1. CI pushes changes to trigger documentation updates
 
 **Exit**: All levels are verified and documentation is updated
 
----
+______________________________________________________________________
 
 ## Flow 7: Generate Aggregated levels.json
 
@@ -138,19 +146,21 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Developer runs generate command with optional filters:
-  - All levels: `cargo run -- generate-levels-json`
-  - Specific difficulties: `cargo run -- generate-levels-json --filter easy,medium`
-  - Dry run: `cargo run -- generate-levels-json --dry-run`
+
+- All levels: `cargo run -- generate-levels-json`
+- Specific difficulties: `cargo run -- generate-levels-json --filter easy,medium`
+- Dry run: `cargo run -- generate-levels-json --dry-run`
+
 2. System reads levels.toml from each difficulty folder
-3. System loads level JSON files in the order specified in levels.toml
-4. System aggregates levels into a single JSON array
-5. System outputs the aggregated JSON to stdout
-6. Developer redirects output to file: `cargo run -- generate-levels-json > output.json`
-7. Developer manually copies to `gsnake-core/engine/core/data/levels.json`
+1. System loads level JSON files in the order specified in levels.toml
+1. System aggregates levels into a single JSON array
+1. System outputs the aggregated JSON to stdout
+1. Developer redirects output to file: `cargo run -- generate-levels-json > output.json`
+1. Developer manually copies to `gsnake-core/engine/core/data/levels.json`
 
 **Exit**: Master levels.json is updated with selected levels
 
----
+______________________________________________________________________
 
 ## Flow 8: Replay Command for Debugging
 
@@ -159,15 +169,15 @@ This document describes the user flows for the level management system, covering
 **Steps**:
 
 1. Developer runs replay command: `cargo run -- replay levels/easy/level_001.json playbacks/easy/level_001.json`
-2. System loads the level and playback
-3. System displays visual playback in the terminal (like normal gameplay)
-4. Playback runs with timing from the playback JSON
-5. Developer can see exactly how the solution plays out
-6. On completion or failure, system exits
+1. System loads the level and playback
+1. System displays visual playback in the terminal (like normal gameplay)
+1. Playback runs with timing from the playback JSON
+1. Developer can see exactly how the solution plays out
+1. On completion or failure, system exits
 
 **Exit**: Developer understands the solution behavior
 
----
+______________________________________________________________________
 
 ## Web Interface Wireframes
 
@@ -372,7 +382,7 @@ body { font-family: system-ui, sans-serif; background: #1a1a1a; color: #fff; dis
 </html>
 ```
 
----
+______________________________________________________________________
 
 ## Flow Sequence Diagram
 
@@ -414,4 +424,3 @@ sequenceDiagram
     Levels-->>Designer: Output to stdout
     Designer->>Designer: Copy to gsnake-core
 ```
-

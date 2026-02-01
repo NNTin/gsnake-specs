@@ -279,9 +279,9 @@ Extend existing collision detection to handle new objects:
 **Collision Priority Order:**
 
 1. Spike contact → Game Over
-2. Obstacle/wall contact → Game Over
-3. Self-collision → Game Over
-4. Exit + food requirement met → Level Complete
+1. Obstacle/wall contact → Game Over
+1. Self-collision → Game Over
+1. Exit + food requirement met → Level Complete
 
 ### Component Integration
 
@@ -319,13 +319,13 @@ graph TD
 **New Logic Flow in `process_move()`:**
 
 1. Validate move (existing + stone push validation)
-2. Execute move (existing + stone push execution)
-3. Check food collection (existing + new food types)
-4. Apply snake gravity (via gravity module)
-5. Apply stone gravity (via gravity module)
-6. Apply falling food gravity (via gravity module)
-7. Check collisions (extended with spikes, priority order)
-8. Update game state
+1. Execute move (existing + stone push execution)
+1. Check food collection (existing + new food types)
+1. Apply snake gravity (via gravity module)
+1. Apply stone gravity (via gravity module)
+1. Apply falling food gravity (via gravity module)
+1. Check collisions (extended with spikes, priority order)
+1. Update game state
 
 **2. Frame Generation** (file:gsnake-core/engine/core/src/engine.rs)
 
@@ -439,4 +439,3 @@ Integrate into web build process (file:gsnake-web/package.json):
 - TypeScript type compatibility
 - Error serialization with rejection reasons
 - Backward compatibility with old level format
-

@@ -563,18 +563,18 @@ button {
 **Steps:**
 
 1. User lands on the editor landing page
-2. User clicks "Create New Level" button
-3. Grid size configuration modal appears
-4. User enters desired width and height (default: 15x15)
-5. User clicks "Create" button
-6. Editor interface loads with empty grid at specified dimensions
-7. Entity palette shows on left sidebar with "Snake" selected by default
-8. Toolbar displays with undo/redo, snake direction (default: East), test, and save buttons
-9. User is ready to place entities on the grid
+1. User clicks "Create New Level" button
+1. Grid size configuration modal appears
+1. User enters desired width and height (default: 15x15)
+1. User clicks "Create" button
+1. Editor interface loads with empty grid at specified dimensions
+1. Entity palette shows on left sidebar with "Snake" selected by default
+1. Toolbar displays with undo/redo, snake direction (default: East), test, and save buttons
+1. User is ready to place entities on the grid
 
 **Exit:** User is in the editor interface, ready to edit the level.
 
----
+______________________________________________________________________
 
 ### Flow 2: Load Existing Level
 
@@ -585,22 +585,25 @@ button {
 **Steps:**
 
 1. User lands on the editor landing page
-2. User clicks "Load Existing Level" button
-3. File upload dialog appears (browser native file picker)
-4. User selects a level JSON file from their device
-5. Editor parses the JSON file
-6. If parsing succeeds:
-  - Editor interface loads with the level data
-  - Grid automatically resizes to match the loaded level's dimensions
-  - All entities from the JSON appear on the grid with visual representations
-  - Snake direction updates to match the loaded level
+1. User clicks "Load Existing Level" button
+1. File upload dialog appears (browser native file picker)
+1. User selects a level JSON file from their device
+1. Editor parses the JSON file
+1. If parsing succeeds:
+
+- Editor interface loads with the level data
+- Grid automatically resizes to match the loaded level's dimensions
+- All entities from the JSON appear on the grid with visual representations
+- Snake direction updates to match the loaded level
+
 7. If parsing fails:
-  - Error message displays explaining the issue
-  - User returns to landing page
+
+- Error message displays explaining the issue
+- User returns to landing page
 
 **Exit:** User is in the editor interface with the loaded level, ready to edit.
 
----
+______________________________________________________________________
 
 ### Flow 3: Edit Level - Place Entities
 
@@ -613,34 +616,34 @@ button {
 **Option A: Drag-and-Drop (Single Placement)**
 
 1. User drags an entity from the palette
-2. Cursor shows the entity icon while dragging
-3. User drops the entity on a grid cell
-4. Entity appears on the grid with visual representation (colored cell/icon)
-5. If cell already has an entity, it's replaced without warning
-6. Palette selection remains unchanged
+1. Cursor shows the entity icon while dragging
+1. User drops the entity on a grid cell
+1. Entity appears on the grid with visual representation (colored cell/icon)
+1. If cell already has an entity, it's replaced without warning
+1. Palette selection remains unchanged
 
 **Option B: Click-to-Select (Multiple Placements)**
 
 1. User clicks an entity in the palette
-2. Selected entity highlights in the palette (border/background change)
-3. User clicks grid cells to place the entity
-4. Each click places the entity on that cell
-5. Entity remains selected for multiple placements
-6. If cell already has an entity, it's replaced without warning
-7. User can click a different entity in the palette to switch
+1. Selected entity highlights in the palette (border/background change)
+1. User clicks grid cells to place the entity
+1. Each click places the entity on that cell
+1. Entity remains selected for multiple placements
+1. If cell already has an entity, it's replaced without warning
+1. User can click a different entity in the palette to switch
 
 **Special Case: Snake Placement**
 
 1. User selects "Snake" from palette
-2. User clicks first grid cell (this becomes the snake head)
-3. User clicks subsequent cells to add body segments
-4. Each click adds a segment to the snake array
-5. Visual feedback shows connected snake segments
-6. User clicks a different entity to finish snake placement
+1. User clicks first grid cell (this becomes the snake head)
+1. User clicks subsequent cells to add body segments
+1. Each click adds a segment to the snake array
+1. Visual feedback shows connected snake segments
+1. User clicks a different entity to finish snake placement
 
 **Exit:** Entities are placed on the grid, level state is updated.
 
----
+______________________________________________________________________
 
 ### Flow 4: Edit Level - Remove Entities
 
@@ -651,15 +654,15 @@ button {
 **Steps:**
 
 1. User holds Shift key
-2. User clicks on a grid cell containing an entity
-3. Entity is immediately removed from the grid
-4. Grid cell returns to empty state
-5. Level state is updated
-6. Action is added to undo history
+1. User clicks on a grid cell containing an entity
+1. Entity is immediately removed from the grid
+1. Grid cell returns to empty state
+1. Level state is updated
+1. Action is added to undo history
 
 **Exit:** Entity is removed, grid cell is empty.
 
----
+______________________________________________________________________
 
 ### Flow 5: Edit Level - Undo/Redo
 
@@ -672,20 +675,20 @@ button {
 **Undo:**
 
 1. User clicks "Undo" button or presses Ctrl+Z (Cmd+Z on Mac)
-2. Last action is reversed (entity placement or removal)
-3. Grid updates to reflect previous state
-4. Action moves to redo history
+1. Last action is reversed (entity placement or removal)
+1. Grid updates to reflect previous state
+1. Action moves to redo history
 
 **Redo:**
 
 1. User clicks "Redo" button or presses Ctrl+Y (Cmd+Shift+Z on Mac)
-2. Previously undone action is reapplied
-3. Grid updates to reflect redone state
-4. Action moves back to undo history
+1. Previously undone action is reapplied
+1. Grid updates to reflect redone state
+1. Action moves back to undo history
 
 **Exit:** Level state is updated to previous/next state.
 
----
+______________________________________________________________________
 
 ### Flow 6: Configure Snake Direction
 
@@ -696,15 +699,15 @@ button {
 **Steps:**
 
 1. User locates the "Direction" dropdown in the toolbar
-2. User clicks the dropdown
-3. Options appear: North, South, East, West
-4. User selects desired direction
-5. Snake direction is updated in the level data
-6. Visual feedback may show direction indicator on snake (optional)
+1. User clicks the dropdown
+1. Options appear: North, South, East, West
+1. User selects desired direction
+1. Snake direction is updated in the level data
+1. Visual feedback may show direction indicator on snake (optional)
 
 **Exit:** Snake direction is set for the level.
 
----
+______________________________________________________________________
 
 ### Flow 7: Test Level
 
@@ -715,19 +718,19 @@ button {
 **Steps:**
 
 1. User clicks "Test Level" button
-2. Editor generates level JSON from current state
-3. Browser downloads the JSON file (e.g., `test-level.json`)
-4. User manually opens gsnake-web in a new tab/window
-5. In gsnake-web, user uses the file upload feature to load the test level
-6. User plays the level to test gameplay
-7. User identifies issues or confirms level works as intended
-8. User closes gsnake-web tab and returns to editor tab
-9. User makes adjustments based on testing feedback
-10. User can repeat the test cycle as needed
+1. Editor generates level JSON from current state
+1. Browser downloads the JSON file (e.g., `test-level.json`)
+1. User manually opens gsnake-web in a new tab/window
+1. In gsnake-web, user uses the file upload feature to load the test level
+1. User plays the level to test gameplay
+1. User identifies issues or confirms level works as intended
+1. User closes gsnake-web tab and returns to editor tab
+1. User makes adjustments based on testing feedback
+1. User can repeat the test cycle as needed
 
 **Exit:** User returns to editor to continue editing or save the level.
 
----
+______________________________________________________________________
 
 ### Flow 8: Save/Export Level
 
@@ -738,23 +741,25 @@ button {
 **Steps:**
 
 1. User clicks "Save Level" button
-2. Save modal appears prompting for metadata
-3. User enters level name (e.g., "First Steps")
-4. User selects difficulty from dropdown (easy/medium/hard)
-5. Modal shows info: "Level ID will be auto-generated"
-6. User clicks "Export JSON" button
-7. Editor generates level JSON with:
-  - Auto-generated unique ID
-  - User-provided name and difficulty
-  - All entity positions and grid configuration
-  - Snake direction
+1. Save modal appears prompting for metadata
+1. User enters level name (e.g., "First Steps")
+1. User selects difficulty from dropdown (easy/medium/hard)
+1. Modal shows info: "Level ID will be auto-generated"
+1. User clicks "Export JSON" button
+1. Editor generates level JSON with:
+
+- Auto-generated unique ID
+- User-provided name and difficulty
+- All entity positions and grid configuration
+- Snake direction
+
 8. Browser downloads the JSON file (e.g., `level-001.json`)
-9. Modal closes, user returns to editor
-10. User can manually place the file in the appropriate directory
+1. Modal closes, user returns to editor
+1. User can manually place the file in the appropriate directory
 
 **Exit:** Level JSON is downloaded, user can continue editing or create a new level.
 
----
+______________________________________________________________________
 
 ### Flow 9: Start New Level from Editor
 
@@ -765,37 +770,34 @@ button {
 **Steps:**
 
 1. User clicks "New Level" button in toolbar
-2. Editor returns to landing page
-3. User can choose "Create New Level" or "Load Existing Level"
-4. Flow continues as per Flow 1 or Flow 2
+1. Editor returns to landing page
+1. User can choose "Create New Level" or "Load Existing Level"
+1. Flow continues as per Flow 1 or Flow 2
 
 **Exit:** User is back at landing page or in a new editor session.
 
----
+______________________________________________________________________
 
 ## Interaction Patterns Summary
 
-
-| Action                  | Interaction                     | Visual Feedback                     |
+| Action | Interaction | Visual Feedback |
 | ----------------------- | ------------------------------- | ----------------------------------- |
-| Select entity           | Click entity in palette         | Highlight with border/background    |
-| Place entity (single)   | Drag from palette, drop on grid | Entity appears on cell              |
-| Place entity (multiple) | Click entity, then click cells  | Entity appears on each clicked cell |
-| Place snake             | Click cells in sequence         | Connected segments appear           |
-| Remove entity           | Shift + click on cell           | Entity disappears                   |
-| Undo                    | Ctrl+Z or button                | Grid reverts to previous state      |
-| Redo                    | Ctrl+Y or button                | Grid advances to next state         |
-| Change direction        | Select from dropdown            | Dropdown updates                    |
-| Test level              | Click button                    | JSON downloads                      |
-| Save level              | Click button, fill modal        | JSON downloads with metadata        |
-
+| Select entity | Click entity in palette | Highlight with border/background |
+| Place entity (single) | Drag from palette, drop on grid | Entity appears on cell |
+| Place entity (multiple) | Click entity, then click cells | Entity appears on each clicked cell |
+| Place snake | Click cells in sequence | Connected segments appear |
+| Remove entity | Shift + click on cell | Entity disappears |
+| Undo | Ctrl+Z or button | Grid reverts to previous state |
+| Redo | Ctrl+Y or button | Grid advances to next state |
+| Change direction | Select from dropdown | Dropdown updates |
+| Test level | Click button | JSON downloads |
+| Save level | Click button, fill modal | JSON downloads with metadata |
 
 ## Key UX Principles
 
 1. **Immediate Visual Feedback:** All entity placements show instantly with colored cells/icons matching game appearance
-2. **Flexible Interaction:** Support both drag-and-drop (quick single placements) and click-to-select (efficient multiple placements)
-3. **Forgiving Editing:** Undo/redo support allows experimentation without fear of mistakes
-4. **Minimal Friction:** No validation warnings during editing; users can create any configuration
-5. **Clear State Communication:** Selected entity always highlighted in palette
-6. **Seamless Testing:** Simple download-and-upload workflow for testing in gsnake-web
-
+1. **Flexible Interaction:** Support both drag-and-drop (quick single placements) and click-to-select (efficient multiple placements)
+1. **Forgiving Editing:** Undo/redo support allows experimentation without fear of mistakes
+1. **Minimal Friction:** No validation warnings during editing; users can create any configuration
+1. **Clear State Communication:** Selected entity always highlighted in palette
+1. **Seamless Testing:** Simple download-and-upload workflow for testing in gsnake-web

@@ -24,8 +24,8 @@ Port the game's movement, gravity, and collision logic from TypeScript to the Ru
 
 ## Key Deliverables
 
-1.  **Engine Logic:** `gsnake-core/src/engine.rs` containing the core game loop.
-2.  **Test Suite:** Unit tests verifying gravity behavior, boundary collisions, and win/loss conditions.
+1. **Engine Logic:** `gsnake-core/src/engine.rs` containing the core game loop.
+1. **Test Suite:** Unit tests verifying gravity behavior, boundary collisions, and win/loss conditions.
 
 ## Acceptance Criteria
 

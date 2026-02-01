@@ -7,17 +7,17 @@
 ## Table of Contents
 
 1. [Introduction](#1-introduction)
-2. [Architecture Overview](#2-architecture-overview)
-3. [WASM Module Interface](#3-wasm-module-interface)
-4. [Data Types & Serialization](#4-data-types--serialization)
-5. [Initialization Flow](#5-initialization-flow)
-6. [Game Loop & Move Processing](#6-game-loop--move-processing)
-7. [Error Handling](#7-error-handling)
-8. [Level Definition Format](#8-level-definition-format)
-9. [Integration Requirements](#9-integration-requirements)
-10. [Testing Recommendations](#10-testing-recommendations)
+1. [Architecture Overview](#2-architecture-overview)
+1. [WASM Module Interface](#3-wasm-module-interface)
+1. [Data Types & Serialization](#4-data-types--serialization)
+1. [Initialization Flow](#5-initialization-flow)
+1. [Game Loop & Move Processing](#6-game-loop--move-processing)
+1. [Error Handling](#7-error-handling)
+1. [Level Definition Format](#8-level-definition-format)
+1. [Integration Requirements](#9-integration-requirements)
+1. [Testing Recommendations](#10-testing-recommendations)
 
----
+______________________________________________________________________
 
 ## 1. Introduction
 
@@ -51,7 +51,7 @@ This specification covers:
 - **CellType**: Enum representing grid cell contents
 - **Contract**: The interface boundary between WASM and JavaScript
 
----
+______________________________________________________________________
 
 ## 2. Architecture Overview
 
@@ -106,12 +106,12 @@ graph TB
 ### 2.3 Design Principles
 
 1. **Immutability**: Level definitions are immutable; game state changes through new Frame emissions
-2. **Push-based Updates**: Frame changes are pushed via callbacks, not polled
-3. **Strict Serialization**: All types have canonical JSON representations
-4. **Error Safety**: All errors are typed and serializable
-5. **Stateless API**: Each WasmGameEngine instance encapsulates level state
+1. **Push-based Updates**: Frame changes are pushed via callbacks, not polled
+1. **Strict Serialization**: All types have canonical JSON representations
+1. **Error Safety**: All errors are typed and serializable
+1. **Stateless API**: Each WasmGameEngine instance encapsulates level state
 
----
+______________________________________________________________________
 
 ## 3. WASM Module Interface
 
@@ -129,6 +129,7 @@ await init();
 ```
 
 **Requirements:**
+
 - `init()` must be called exactly once before any other WASM functions
 - `init()` is asynchronous and returns a Promise
 - Subsequent calls to `init()` are safe but redundant
@@ -144,18 +145,22 @@ constructor(level_json: LevelDefinition): WasmGameEngine
 ```
 
 **Parameters:**
+
 - `level_json`: A JavaScript object matching the `LevelDefinition` schema (see §8)
 
 **Behavior:**
+
 - Parses and validates the level definition
 - Initializes internal game state
 - Sets game status to `"Playing"`
 - Does NOT emit an initial frame (call `getFrame()` or wait for `onFrame` after first move)
 
 **Throws:**
+
 - `ContractError` with `kind: "initializationFailed"` if level JSON is invalid
 
 **Example:**
+
 ```javascript
 const level = {
   id: 1,
@@ -178,9 +183,11 @@ onFrame(callback: (frame: Frame) => void): void
 ```
 
 **Parameters:**
+
 - `callback`: JavaScript function invoked with a `Frame` object on every state change
 
 **Behavior:**
+
 - Registers a callback for frame updates
 - Callback is invoked after:
   - Successful `processMove()` call
@@ -189,6 +196,7 @@ onFrame(callback: (frame: Frame) => void): void
 - Callback receives a `Frame` object (see §4.3.7)
 
 **Example:**
+
 ```javascript
 engine.onFrame((frame) => {
   console.log('New frame:', frame);
@@ -203,27 +211,32 @@ processMove(direction: Direction): Frame
 ```
 
 **Parameters:**
+
 - `direction`: One of `"North"`, `"South"`, `"East"`, `"West"` (case-sensitive)
 
 **Returns:**
+
 - `Frame` object representing the new game state
 
 **Behavior:**
+
 1. Validates input direction
-2. Rejects 180-degree turns (opposite of current direction)
-3. Moves snake in the specified direction
-4. Applies gravity physics (snake falls until hitting obstacle/food/boundary)
-5. Checks for collisions (walls, obstacles, self)
-6. Updates game status if needed (`GameOver`, `LevelComplete`)
-7. Invokes `onFrame` callback with new frame
-8. Returns the frame
+1. Rejects 180-degree turns (opposite of current direction)
+1. Moves snake in the specified direction
+1. Applies gravity physics (snake falls until hitting obstacle/food/boundary)
+1. Checks for collisions (walls, obstacles, self)
+1. Updates game status if needed (`GameOver`, `LevelComplete`)
+1. Invokes `onFrame` callback with new frame
+1. Returns the frame
 
 **Throws:**
+
 - `ContractError` with:
   - `kind: "invalidInput"` if direction is not a valid Direction string
   - `kind: "inputRejected"` if direction causes a 180-degree turn or game is not in `"Playing"` status
 
 **Example:**
+
 ```javascript
 try {
   const frame = engine.processMove("North");
@@ -241,17 +254,21 @@ getFrame(): Frame
 ```
 
 **Returns:**
+
 - Current `Frame` snapshot
 
 **Behavior:**
+
 - Returns the current game state without modifying it
 - Does NOT invoke `onFrame` callback
 - Useful for initial render or debugging
 
 **Throws:**
+
 - `ContractError` with `kind: "serializationFailed"` if frame cannot be serialized
 
 **Example:**
+
 ```javascript
 const currentFrame = engine.getFrame();
 console.log(currentFrame.state.status); // e.g., "Playing"
@@ -264,13 +281,16 @@ getGameState(): GameState
 ```
 
 **Returns:**
+
 - Current `GameState` object (without grid)
 
 **Behavior:**
+
 - Returns only the metadata portion of the frame
 - Lighter-weight alternative to `getFrame()`
 
 **Example:**
+
 ```javascript
 const state = engine.getGameState();
 console.log(`Moves: ${state.moves}, Food: ${state.foodCollected}/${state.totalFood}`);
@@ -283,13 +303,16 @@ getLevel(): LevelDefinition
 ```
 
 **Returns:**
+
 - The immutable `LevelDefinition` used to initialize this engine instance
 
 **Behavior:**
+
 - Returns a copy of the original level configuration
 - Useful for debugging or displaying level metadata
 
 **Example:**
+
 ```javascript
 const level = engine.getLevel();
 console.log(`Level: ${level.name} (${level.gridSize.width}x${level.gridSize.height})`);
@@ -306,16 +329,20 @@ getLevels(): LevelDefinition[]
 ```
 
 **Returns:**
+
 - Array of all embedded level definitions
 
 **Behavior:**
+
 - Reads from the embedded `levels.json` compiled into the WASM binary
 - Returns the complete level pack
 
 **Throws:**
+
 - `ContractError` with `kind: "serializationFailed"` if levels.json is corrupted
 
 **Example:**
+
 ```javascript
 const levels = getLevels();
 console.log(`${levels.length} levels available`);
@@ -330,9 +357,11 @@ log(message: string): void
 ```
 
 **Parameters:**
+
 - `message`: String to log to browser console
 
 **Behavior:**
+
 - Utility function for debugging from Rust code
 - Clients typically don't need to call this directly
 
@@ -343,17 +372,19 @@ init_panic_hook(): void
 ```
 
 **Behavior:**
+
 - Configures better panic messages in development
 - Should be called once after `init()` in development builds
 - Safe to call in production (no-op or minimal overhead)
 
 **Example:**
+
 ```javascript
 await init();
 init_panic_hook(); // Better error messages in dev
 ```
 
----
+______________________________________________________________________
 
 ## 4. Data Types & Serialization
 
@@ -370,6 +401,7 @@ type Direction = "North" | "South" | "East" | "West";
 ```
 
 **JSON Examples:**
+
 ```json
 "North"
 "South"
@@ -378,6 +410,7 @@ type Direction = "North" | "South" | "East" | "West";
 ```
 
 **Usage:**
+
 - Input to `processMove()`
 - Part of `LevelDefinition.snakeDirection`
 
@@ -390,6 +423,7 @@ type CellType = "Empty" | "SnakeHead" | "SnakeBody" | "Food" | "Obstacle" | "Exi
 ```
 
 **JSON Examples:**
+
 ```json
 "Empty"
 "SnakeHead"
@@ -400,6 +434,7 @@ type CellType = "Empty" | "SnakeHead" | "SnakeBody" | "Food" | "Obstacle" | "Exi
 ```
 
 **Usage:**
+
 - Elements of `Frame.grid[][]`
 - Determines cell rendering in UI
 
@@ -422,6 +457,7 @@ type GameStatus = "Playing" | "GameOver" | "LevelComplete" | "AllComplete";
 ```
 
 **JSON Examples:**
+
 ```json
 "Playing"
 "GameOver"
@@ -430,12 +466,14 @@ type GameStatus = "Playing" | "GameOver" | "LevelComplete" | "AllComplete";
 ```
 
 **Semantics:**
+
 - `"Playing"`: Game in progress, accepts moves
 - `"GameOver"`: Snake collided, no further moves accepted
 - `"LevelComplete"`: All food collected and exit reached, ready for next level
 - `"AllComplete"`: All levels in the pack completed (not typically used in single-level mode)
 
 **Usage:**
+
 - Part of `GameState.status`
 - Client should disable input when status is not `"Playing"`
 
@@ -455,16 +493,19 @@ interface Position {
 ```
 
 **JSON Example:**
+
 ```json
 { "x": 5, "y": 10 }
 ```
 
 **Semantics:**
+
 - `x`: Column index (0-based, increases rightward)
 - `y`: Row index (0-based, increases downward)
 - Coordinate system: origin (0,0) is top-left
 
 **Usage:**
+
 - Snake segments in `LevelDefinition.snake[]`
 - Obstacle positions
 - Food positions
@@ -480,16 +521,19 @@ interface GridSize {
 ```
 
 **JSON Example:**
+
 ```json
 { "width": 15, "height": 15 }
 ```
 
 **Semantics:**
+
 - `width`: Number of columns
 - `height`: Number of rows
 - Both must be positive integers
 
 **Usage:**
+
 - `LevelDefinition.gridSize`
 
 #### 4.2.3 GameState
@@ -507,6 +551,7 @@ interface GameState {
 **Field Naming:** Uses **camelCase** (NOT snake_case)
 
 **JSON Example:**
+
 ```json
 {
   "status": "Playing",
@@ -528,6 +573,7 @@ interface GameState {
 | `totalFood` | `number` | Total food in level (constant) |
 
 **Invariants:**
+
 - `0 <= foodCollected <= totalFood`
 - `moves >= 0`
 - `currentLevel >= 0`
@@ -544,6 +590,7 @@ interface Frame {
 ```
 
 **JSON Example:**
+
 ```json
 {
   "grid": [
@@ -563,21 +610,25 @@ interface Frame {
 ```
 
 **Grid Structure:**
+
 - `grid` is a 2D array: `grid[y][x]` (row-major order)
 - Dimensions match `LevelDefinition.gridSize`: `grid.length === height`, `grid[0].length === width`
 - Each cell contains exactly one `CellType`
 
 **Invariants:**
+
 - Exactly one `"SnakeHead"` in the grid
 - At least one `"SnakeBody"` (snake length >= 2)
 - All `CellType` values are valid enum members
 - Grid dimensions are consistent across all rows
 
 **Usage:**
+
 - Primary output of `processMove()` and `getFrame()`
 - Payload in `onFrame` callback
 
 **Contract Test Reference:**
+
 - Rust: `gsnake-core/engine/core/tests/contract_tests.rs:110-129`
 - E2E: `e2e/contract.spec.ts:35-53`
 
@@ -599,6 +650,7 @@ interface LevelDefinition {
 **Field Naming:** Uses **camelCase** (NOT snake_case)
 
 **JSON Example:**
+
 ```json
 {
   "id": 1,
@@ -635,6 +687,7 @@ interface LevelDefinition {
 | `snakeDirection` | `Direction` | Initial snake direction |
 
 **Invariants:**
+
 - `snake.length >= 2` (head + at least one body segment)
 - `snake[0]` is the head position
 - All positions must be within `gridSize` bounds: `0 <= x < width`, `0 <= y < height`
@@ -659,6 +712,7 @@ type ContractErrorKind =
 **Special Note:** Uses **camelCase** (exception to PascalCase enum rule)
 
 **JSON Examples:**
+
 ```json
 "invalidInput"
 "inputRejected"
@@ -692,6 +746,7 @@ interface ContractError {
 **JSON Examples:**
 
 Without context:
+
 ```json
 {
   "kind": "inputRejected",
@@ -700,6 +755,7 @@ Without context:
 ```
 
 With context:
+
 ```json
 {
   "kind": "invalidInput",
@@ -720,10 +776,11 @@ With context:
 | `context` | `Record<string, string>` | No | Optional key-value debugging context |
 
 **Contract Test Reference:**
+
 - Rust: `gsnake-core/engine/core/tests/contract_tests.rs:186-223`
 - E2E: `e2e/contract.spec.ts:55-93`
 
----
+______________________________________________________________________
 
 ## 5. Initialization Flow
 
@@ -774,32 +831,38 @@ sequenceDiagram
 ### 5.2 Step-by-Step Initialization
 
 1. **Import WASM Module**
+
    ```javascript
    import init, { WasmGameEngine, getLevels } from 'gsnake-wasm';
    ```
 
-2. **Initialize WASM**
+1. **Initialize WASM**
+
    ```javascript
    await init(); // Must await before any WASM calls
    ```
 
-3. **Load Level Definitions**
+1. **Load Level Definitions**
+
    ```javascript
    const levels = getLevels();
    console.log(`Loaded ${levels.length} levels`);
    ```
 
-4. **Select Level** (client-specific logic)
+1. **Select Level** (client-specific logic)
+
    ```javascript
    const levelToPlay = levels[0]; // Or from URL params, user selection, etc.
    ```
 
-5. **Create Engine Instance**
+1. **Create Engine Instance**
+
    ```javascript
    const engine = new WasmGameEngine(levelToPlay);
    ```
 
-6. **Register Frame Callback**
+1. **Register Frame Callback**
+
    ```javascript
    engine.onFrame((frame) => {
      // Update UI with frame
@@ -808,13 +871,15 @@ sequenceDiagram
    });
    ```
 
-7. **Get Initial Frame** (optional, for initial render)
+1. **Get Initial Frame** (optional, for initial render)
+
    ```javascript
    const initialFrame = engine.getFrame();
    renderGrid(initialFrame.grid);
    ```
 
-8. **Ready for User Input**
+1. **Ready for User Input**
+
    - Attach keyboard/touch handlers
    - Call `engine.processMove(direction)` on user input
 
@@ -826,7 +891,7 @@ sequenceDiagram
 | `getLevels()` throws `serializationFailed` | Embedded levels.json is invalid | Fatal error, report bug |
 | `new WasmGameEngine()` throws `initializationFailed` | Invalid level definition | Validate level JSON, show error |
 
----
+______________________________________________________________________
 
 ## 6. Game Loop & Move Processing
 
@@ -908,13 +973,16 @@ sequenceDiagram
 #### 6.2.1 Input Validation
 
 1. **Direction must be valid string:**
+
    - Accepted: `"North"`, `"South"`, `"East"`, `"West"`
    - Rejected: anything else → throws `invalidInput`
 
-2. **Game must be in `"Playing"` status:**
+1. **Game must be in `"Playing"` status:**
+
    - If status is `"GameOver"` or `"LevelComplete"` → throws `inputRejected`
 
-3. **No 180-degree turns:**
+1. **No 180-degree turns:**
+
    - If moving North, cannot move South
    - If moving East, cannot move West
    - Violation → throws `inputRejected`
@@ -922,14 +990,16 @@ sequenceDiagram
 #### 6.2.2 Snake Movement
 
 1. Calculate new head position:
+
    - North: `y - 1`
    - South: `y + 1`
    - East: `x + 1`
    - West: `x - 1`
 
-2. Insert new head at `segments[0]`
+1. Insert new head at `segments[0]`
 
-3. Check for food at new head position:
+1. Check for food at new head position:
+
    - **Food found:** Remove food, increment `foodCollected`, snake grows (tail stays)
    - **No food:** Remove tail via `pop()` (snake length constant)
 
@@ -938,12 +1008,14 @@ sequenceDiagram
 After horizontal/vertical movement, apply gravity:
 
 1. **Falling logic:**
+
    - Move snake down (`y + 1`) until:
      - Hitting bottom boundary, OR
      - Hitting an obstacle, OR
      - Hitting food (food acts as platform)
 
-2. **Per-segment fall:**
+1. **Per-segment fall:**
+
    - Each segment falls independently until supported
    - Collision checks happen after each fall iteration
 
@@ -952,14 +1024,17 @@ After horizontal/vertical movement, apply gravity:
 Check new head position for collisions:
 
 1. **Wall collision:**
+
    - `x < 0 || x >= width || y < 0 || y >= height`
    - Result: `status = "GameOver"`
 
-2. **Obstacle collision:**
+1. **Obstacle collision:**
+
    - New head position matches any `obstacles[]` position
    - Result: `status = "GameOver"`
 
-3. **Self collision:**
+1. **Self collision:**
+
    - New head position matches any snake body segment (excluding head itself)
    - Result: `status = "GameOver"`
 
@@ -975,14 +1050,15 @@ After movement and collision checks:
 After all game logic:
 
 1. Increment `moves` counter
-2. Update `status` if needed
-3. Generate new `Frame` from current state
-4. Invoke `onFrame` callback with new frame
-5. Return frame from `processMove()`
+1. Update `status` if needed
+1. Generate new `Frame` from current state
+1. Invoke `onFrame` callback with new frame
+1. Return frame from `processMove()`
 
 ### 6.3 Example Move Sequence
 
 Initial state:
+
 ```json
 {
   "grid": [
@@ -1002,14 +1078,15 @@ Initial state:
 Call `processMove("East")`:
 
 1. New head position: `(2, 1)` (was `(1, 1)`)
-2. Food at `(2, 0)` - not at new head, no food eaten
-3. Snake does NOT grow, tail removed
-4. Apply gravity: snake falls to `(2, 2)` (hits exit)
-5. Check: `head == exit` AND `foodCollected (0) == totalFood (1)`? **No**
-6. Status remains `"Playing"` (exit requires all food)
-7. Increment moves: `moves = 1`
+1. Food at `(2, 0)` - not at new head, no food eaten
+1. Snake does NOT grow, tail removed
+1. Apply gravity: snake falls to `(2, 2)` (hits exit)
+1. Check: `head == exit` AND `foodCollected (0) == totalFood (1)`? **No**
+1. Status remains `"Playing"` (exit requires all food)
+1. Increment moves: `moves = 1`
 
 Resulting state:
+
 ```json
 {
   "grid": [
@@ -1028,7 +1105,7 @@ Resulting state:
 
 **E2E Test Reference:** `e2e/contract.spec.ts:35-53` (validates move increments state)
 
----
+______________________________________________________________________
 
 ## 7. Error Handling
 
@@ -1037,10 +1114,11 @@ Resulting state:
 All WASM API methods throw `ContractError` objects (not plain JavaScript errors).
 
 **Client responsibilities:**
+
 1. Wrap WASM calls in try-catch blocks
-2. Handle `ContractError` objects based on `kind`
-3. Display appropriate user feedback
-4. Log errors for debugging
+1. Handle `ContractError` objects based on `kind`
+1. Display appropriate user feedback
+1. Log errors for debugging
 
 ### 7.2 Error Handling Patterns
 
@@ -1133,7 +1211,7 @@ catch (error) {
 
 **E2E Test Reference:** `e2e/contract.spec.ts:95-117` (validates error structure)
 
----
+______________________________________________________________________
 
 ## 8. Level Definition Format
 
@@ -1243,7 +1321,7 @@ try {
 }
 ```
 
----
+______________________________________________________________________
 
 ## 9. Integration Requirements
 
@@ -1449,7 +1527,7 @@ expect(frame.state.moves).toBe(expectedMoves);
 
 **E2E Test Reference:** `e2e/contract.spec.ts:3-277` (entire test suite uses `__gsnakeContract`)
 
----
+______________________________________________________________________
 
 ## 10. Testing Recommendations
 
@@ -1601,6 +1679,7 @@ Outputs fixtures to `gsnake-core/engine/core/tests/fixtures/`:
 - `error-with-context.json` - Error with context example
 
 Use these for:
+
 - JSON schema validation
 - Mock data in unit tests
 - Documentation examples
@@ -1641,24 +1720,28 @@ test('Contract payloads match specification', async ({ page }) => {
 **Recommended CI pipeline:**
 
 1. **Rust Contract Tests:**
+
    ```bash
    cd gsnake-core/engine/core
    cargo test
    ```
 
-2. **WASM Build:**
+1. **WASM Build:**
+
    ```bash
    cd gsnake-core/engine/bindings/wasm
    wasm-pack build --target web
    ```
 
-3. **TypeScript Type Check:**
+1. **TypeScript Type Check:**
+
    ```bash
    cd gsnake-web
    npm run type-check
    ```
 
-4. **E2E Contract Tests:**
+1. **E2E Contract Tests:**
+
    ```bash
    cd gsnake-web
    npm run test:e2e
@@ -1666,7 +1749,7 @@ test('Contract payloads match specification', async ({ page }) => {
 
 This ensures contract compliance at every layer: Rust serialization → WASM FFI → TypeScript types → E2E behavior.
 
----
+______________________________________________________________________
 
 ## Appendix A: Complete Type Reference
 
@@ -1729,7 +1812,7 @@ export interface ContractError {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Appendix B: Reference Implementation
 
@@ -1748,7 +1831,7 @@ The canonical reference implementation is **gsnake-web** (Svelte-based client).
 
 **Repository:** (included in monorepo at `/gsnake-web`)
 
----
+______________________________________________________________________
 
 ## Appendix C: Contract Test Coverage
 
@@ -1783,7 +1866,7 @@ The canonical reference implementation is **gsnake-web** (Svelte-based client).
 
 **Total Coverage:** ~30 contract tests across Rust + E2E layers
 
----
+______________________________________________________________________
 
 ## Appendix D: Common Pitfalls
 
@@ -1871,7 +1954,7 @@ await init();
 const levels = getLevels();
 ```
 
----
+______________________________________________________________________
 
 ## Appendix E: Version History
 
@@ -1879,7 +1962,7 @@ const levels = getLevels();
 |---------|------|---------|
 | 1.0 | 2026-01-18 | Initial specification based on gsnake-core v0.2.1 |
 
----
+______________________________________________________________________
 
 ## Appendix F: Contact & Support
 
@@ -1889,6 +1972,6 @@ For questions, issues, or contributions related to this contract specification:
 - **Issues:** File contract-related bugs with label `contract-spec`
 - **Discussions:** Use GitHub Discussions for implementation questions
 
----
+______________________________________________________________________
 
 **End of Specification**

@@ -24,8 +24,8 @@ Finalize the native gSnake experience by implementing input handling, level load
 
 ## Key Deliverables
 
-1.  **Main Loop:** `gsnake-cli/src/main.rs` coordinating input, logic, and rendering.
-2.  **Data Loader:** Level loading logic for the native environment.
+1. **Main Loop:** `gsnake-cli/src/main.rs` coordinating input, logic, and rendering.
+1. **Data Loader:** Level loading logic for the native environment.
 
 ## Acceptance Criteria
 

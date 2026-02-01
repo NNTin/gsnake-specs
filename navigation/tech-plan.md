@@ -7,28 +7,35 @@ Extend the existing file:engine/KeyboardHandler.ts to handle all keyboard input 
 **Key Architectural Decisions:**
 
 1. **Centralized Keyboard Logic**
-  - All keyboard input flows through KeyboardHandler
-  - State-aware routing: Different key behaviors based on GameStatus (Playing, GameOver, AllComplete)
-  - Modifier key filtering: Ignore Ctrl/Alt/Shift/Meta combinations (only handle plain keys)
-  - Trade-off: Couples keyboard logic to game state, but provides single point of control
-  - Rationale: Prevents listener conflicts, easier to test, matches existing pattern
+
+- All keyboard input flows through KeyboardHandler
+- State-aware routing: Different key behaviors based on GameStatus (Playing, GameOver, AllComplete)
+- Modifier key filtering: Ignore Ctrl/Alt/Shift/Meta combinations (only handle plain keys)
+- Trade-off: Couples keyboard logic to game state, but provides single point of control
+- Rationale: Prevents listener conflicts, easier to test, matches existing pattern
+
 2. **Reactive State Access via Store Subscription**
-  - KeyboardHandler subscribes to file:stores/stores.ts gameState store
-  - Maintains local reference to current GameStatus
-  - Trade-off: Couples KeyboardHandler to Svelte stores
-  - Rationale: Follows existing reactive pattern, automatic updates on state changes
+
+- KeyboardHandler subscribes to file:stores/stores.ts gameState store
+- Maintains local reference to current GameStatus
+- Trade-off: Couples KeyboardHandler to Svelte stores
+- Rationale: Follows existing reactive pattern, automatic updates on state changes
+
 3. **Selective Event Prevention**
-  - Prevent default browser behavior for specific keys:
-    - Always: Space, Tab, Arrows (prevent scrolling/focus changes)
-    - Conditionally: 'r' and 'q' only when no modifier keys pressed (allow Ctrl+R refresh, etc.)
-  - Other keys (letters, numbers) allow default behavior
-  - Trade-off: More permissive, but avoids unwanted scrolling/focus changes
-  - Rationale: Balances UX smoothness with browser compatibility, preserves browser shortcuts
+
+- Prevent default browser behavior for specific keys:
+  - Always: Space, Tab, Arrows (prevent scrolling/focus changes)
+  - Conditionally: 'r' and 'q' only when no modifier keys pressed (allow Ctrl+R refresh, etc.)
+- Other keys (letters, numbers) allow default behavior
+- Trade-off: More permissive, but avoids unwanted scrolling/focus changes
+- Rationale: Balances UX smoothness with browser compatibility, preserves browser shortcuts
+
 4. **Component-Local Auto-Focus**
-  - GameOverModal handles button auto-focus using Svelte's `onMount` lifecycle
-  - Simple, standard Svelte pattern with `bind:this` reference
-  - Trade-off: Component-specific code, not reusable
-  - Rationale: Single use case, no need for abstraction
+
+- GameOverModal handles button auto-focus using Svelte's `onMount` lifecycle
+- Simple, standard Svelte pattern with `bind:this` reference
+- Trade-off: Component-specific code, not reusable
+- Rationale: Single use case, no need for abstraction
 
 **Constraints:**
 
@@ -59,7 +66,7 @@ sequenceDiagram
     Player->>Player: Resume gameplay
 ```
 
----
+______________________________________________________________________
 
 ## Data Model
 
@@ -96,7 +103,7 @@ interface GameState {
 - No modifications to GameEngine's internal state management
 - No changes to event emission or store updates
 
----
+______________________________________________________________________
 
 ## Component Architecture
 
@@ -163,7 +170,7 @@ flowchart TD
     E -->|Other| I
 ```
 
----
+______________________________________________________________________
 
 #### 2. GameOverModal (file:components/GameOverModal.svelte)
 
@@ -188,7 +195,7 @@ flowchart TD
 - No changes to GameEngine interaction (existing click handlers remain)
 - No keyboard event listeners (handled by KeyboardHandler)
 
----
+______________________________________________________________________
 
 #### 3. GameCompleteModal (file:components/GameCompleteModal.svelte)
 
@@ -209,7 +216,7 @@ flowchart TD
 
 - KeyboardHandler handles 'r' and 'q' shortcuts when this modal is visible
 
----
+______________________________________________________________________
 
 ### Unchanged Components
 
@@ -229,7 +236,7 @@ flowchart TD
 - No changes required
 - Existing gameState store provides necessary reactive state
 
----
+______________________________________________________________________
 
 ## Component Interaction Flow
 
@@ -261,7 +268,7 @@ sequenceDiagram
     end
 ```
 
----
+______________________________________________________________________
 
 ## Implementation Considerations
 
@@ -294,4 +301,3 @@ sequenceDiagram
 - Test Escape key behavior in each game state
 - Test preventDefault logic for different key types
 - Integration test: Full keyboard flow from gameplay to modal to restart
-

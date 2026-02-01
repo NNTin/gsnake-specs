@@ -28,19 +28,19 @@ Configure the GitHub repository settings to enable GitHub Pages deployment from 
 ### GitHub Pages Configuration
 
 1. Navigate to repository Settings → Pages
-2. Set Source to "Deploy from a branch"
-3. Select branch: `gh-pages`
-4. Select folder: `/ (root)`
-5. Save configuration
+1. Set Source to "Deploy from a branch"
+1. Select branch: `gh-pages`
+1. Select folder: `/ (root)`
+1. Save configuration
 
 ### Workflow Permissions
 
 Ensure GitHub Actions has write permissions:
 
 1. Navigate to repository Settings → Actions → General
-2. Under "Workflow permissions", select "Read and write permissions"
-3. Check "Allow GitHub Actions to create and approve pull requests" (if needed for commit-back)
-4. Save changes
+1. Under "Workflow permissions", select "Read and write permissions"
+1. Check "Allow GitHub Actions to create and approve pull requests" (if needed for commit-back)
+1. Save changes
 
 ### Verification
 

@@ -15,10 +15,10 @@ This Epic introduces a visual level editor for gSnake, enabling creators to desi
 The existing level creation workflow requires manually editing JSON files in the file:gsnake-levels/levels/ directory. This process is:
 
 1. **Error-prone**: No validation during editing; typos and structural errors only surface when testing
-2. **Tedious**: Placing entities requires calculating coordinates manually and typing them into JSON arrays
-3. **Lacks visual feedback**: Impossible to visualize the level layout without running the game
-4. **Slow iteration**: The edit-save-test cycle is cumbersome, requiring file saves and game restarts
-5. **High barrier to entry**: Requires understanding JSON structure and coordinate systems, limiting who can create levels
+1. **Tedious**: Placing entities requires calculating coordinates manually and typing them into JSON arrays
+1. **Lacks visual feedback**: Impossible to visualize the level layout without running the game
+1. **Slow iteration**: The edit-save-test cycle is cumbersome, requiring file saves and game restarts
+1. **High barrier to entry**: Requires understanding JSON structure and coordinate systems, limiting who can create levels
 
 **Impact:**
 
@@ -32,4 +32,3 @@ A visual level editor that enables:
 - **Better quality**: Enable rapid iteration and experimentation with immediate visual feedback
 - **More content**: Lower the barrier to entry, allowing more people to create levels
 - **Seamless testing**: Integrated workflow to test levels in gsnake-web without manual file management
-

@@ -27,28 +27,33 @@ Set up the Svelte + TypeScript + Vite project foundation and define all core typ
 ## Key Deliverables
 
 1. **Project Structure:**
-  ```
-   /src
-     /engine      (GameEngine, KeyboardHandler)
-     /components  (Svelte components)
-     /stores      (Svelte stores)
-     /data        (levels.json)
-     /types       (TypeScript definitions)
-  ```
+
+```
+ /src
+   /engine      (GameEngine, KeyboardHandler)
+   /components  (Svelte components)
+   /stores      (Svelte stores)
+   /data        (levels.json)
+   /types       (TypeScript definitions)
+```
+
 2. **Type Definitions** (in `/src/types/`):
-  - `Position` interface
-  - `Direction` enum
-  - `CellType` enum
-  - `GameStatus` enum
-  - `Snake` interface
-  - `Level` interface
-  - `GameState` interface
-  - `Grid` type and `GridCache` interface
-  - `GameEvent` type and `GameEventListener` type
+
+- `Position` interface
+- `Direction` enum
+- `CellType` enum
+- `GameStatus` enum
+- `Snake` interface
+- `Level` interface
+- `GameState` interface
+- `Grid` type and `GridCache` interface
+- `GameEvent` type and `GameEventListener` type
+
 3. **Configuration:**
-  - `tsconfig.json` with strict mode
-  - `vite.config.ts` for Svelte
-  - `package.json` with scripts
+
+- `tsconfig.json` with strict mode
+- `vite.config.ts` for Svelte
+- `package.json` with scripts
 
 ## Acceptance Criteria
 

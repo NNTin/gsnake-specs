@@ -29,15 +29,15 @@ Implement all Svelte components for the game UI including the grid, header, moda
 **Component Hierarchy** (`/src/components/`):
 
 1. **App.svelte** - Root component, initializes engine (stub for now)
-2. **GameContainer.svelte** - Main layout, subscribes to stores
-3. **Header.svelte** - Score display and restart button container
-4. **ScoreDisplay.svelte** - Shows level, length, moves
-5. **RestartButton.svelte** - Restart button with click handler
-6. **GameGrid.svelte** - 15×15 CSS Grid, computes cell types
-7. **Cell.svelte** - Individual cell with type-based styling
-8. **Overlay.svelte** - Modal overlay container
-9. **GameOverModal.svelte** - Game over UI with two buttons
-10. **GameCompleteModal.svelte** - All levels complete message
+1. **GameContainer.svelte** - Main layout, subscribes to stores
+1. **Header.svelte** - Score display and restart button container
+1. **ScoreDisplay.svelte** - Shows level, length, moves
+1. **RestartButton.svelte** - Restart button with click handler
+1. **GameGrid.svelte** - 15×15 CSS Grid, computes cell types
+1. **Cell.svelte** - Individual cell with type-based styling
+1. **Overlay.svelte** - Modal overlay container
+1. **GameOverModal.svelte** - Game over UI with two buttons
+1. **GameCompleteModal.svelte** - All levels complete message
 
 ## Component Responsibilities
 
@@ -75,4 +75,3 @@ Implement all Svelte components for the game UI including the grid, header, moda
 
 - `ticket:T1` - Requires types and project structure
 - `ticket:T3` - Requires stores to subscribe to
-

@@ -49,20 +49,23 @@ concurrency:
 **Jobs:**
 
 1. **Validation & Build**
-  - Checkout code
-  - Setup Node.js
-  - Install dependencies
-  - Run type checking (`npm run check`)
-  - Conditional: Update package.json version (tags only)
-  - Conditional: Commit version back to source branch (tags only)
-  - Set `VITE_BASE_PATH` environment variable (different for main vs tags)
-  - Build with Vite (`npm run build`)
+
+- Checkout code
+- Setup Node.js
+- Install dependencies
+- Run type checking (`npm run check`)
+- Conditional: Update package.json version (tags only)
+- Conditional: Commit version back to source branch (tags only)
+- Set `VITE_BASE_PATH` environment variable (different for main vs tags)
+- Build with Vite (`npm run build`)
+
 2. **Deployment**
-  - Prepare deployment directory
-  - Conditional: Validate and update versions.json (tags only)
-  - Conditional: Generate root redirect page (tags only)
-  - Conditional: Generate versions index page (tags only)
-  - Deploy to gh-pages using `peaceiris/actions-gh-pages` action
+
+- Prepare deployment directory
+- Conditional: Validate and update versions.json (tags only)
+- Conditional: Generate root redirect page (tags only)
+- Conditional: Generate versions index page (tags only)
+- Deploy to gh-pages using `peaceiris/actions-gh-pages` action
 
 ### versions.json Management
 
@@ -119,4 +122,3 @@ concurrency:
 - [ ] Concurrency groups prevent simultaneous deployments
 - [ ] Build failures prevent deployment
 - [ ] Invalid versions.json fails deployment with clear error
-

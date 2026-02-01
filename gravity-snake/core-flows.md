@@ -2,7 +2,7 @@
 
 This document defines the user flows for Gravity Snake, a turn-based puzzle game where players navigate a snake through levels using directional movement and gravity mechanics. The game emphasizes strategic planning over reflexes.
 
----
+______________________________________________________________________
 
 ## Flow 1: Game Initialization
 
@@ -13,18 +13,20 @@ This document defines the user flows for Gravity Snake, a turn-based puzzle game
 **Steps:**
 
 1. Game loads and immediately displays Level 1
-2. Game field shows:
-  - Snake at starting position (3 segments)
-  - Food item(s) placed in level
-  - Static obstacles/platforms
-  - Exit/goal tile
+1. Game field shows:
+
+- Snake at starting position (3 segments)
+- Food item(s) placed in level
+- Static obstacles/platforms
+- Exit/goal tile
+
 3. Score display shows: Level 1, Length 3, Moves 0
-4. Restart button is visible and active
-5. Game is ready for player input (keyboard listening active)
+1. Restart button is visible and active
+1. Game is ready for player input (keyboard listening active)
 
 **Exit:** Player is in active gameplay state, ready to make first move
 
----
+______________________________________________________________________
 
 ## Flow 2: Core Gameplay Loop
 
@@ -35,21 +37,29 @@ This document defines the user flows for Gravity Snake, a turn-based puzzle game
 **Steps:**
 
 1. Player presses directional key (North/South/East/West)
-2. Snake head moves one tile in the pressed direction
-3. Snake body follows (each segment moves to previous segment's position)
-4. Moves counter increments by 1
-5. Gravity applies instantly:
-  - Snake falls downward until head hits obstacle, floor, or snake body
-  - Snake appears at final position (no animation)
+1. Snake head moves one tile in the pressed direction
+1. Snake body follows (each segment moves to previous segment's position)
+1. Moves counter increments by 1
+1. Gravity applies instantly:
+
+- Snake falls downward until head hits obstacle, floor, or snake body
+- Snake appears at final position (no animation)
+
 6. Game checks collision:
-  - If snake head hits obstacle or own body → Go to Flow 4 (Game Over)
-  - Otherwise, continue
+
+- If snake head hits obstacle or own body → Go to Flow 4 (Game Over)
+- Otherwise, continue
+
 7. Game checks food collection:
-  - If snake head is on food tile → Snake length increases by 1, food respawns at new location
-  - Length display updates
+
+- If snake head is on food tile → Snake length increases by 1, food respawns at new location
+- Length display updates
+
 8. Game checks exit condition:
-  - If snake head is on exit tile AND food has been collected → Go to Flow 3 (Level Completion)
-  - Otherwise, continue
+
+- If snake head is on exit tile AND food has been collected → Go to Flow 3 (Level Completion)
+- Otherwise, continue
+
 9. Game returns to waiting for next player input
 
 **Exit:** Game is ready for next player move, or transitions to Level Completion/Game Over
@@ -86,7 +96,7 @@ sequenceDiagram
     end
 ```
 
----
+______________________________________________________________________
 
 ## Flow 3: Level Completion & Progression
 
@@ -97,16 +107,18 @@ sequenceDiagram
 **Steps:**
 
 1. Level completion is detected
-2. Next level loads instantly (no transition message)
-3. Game field updates to show new level layout:
-  - Snake resets to starting position (3 segments)
-  - New obstacle/platform configuration
-  - New food placement
-  - New exit location
+1. Next level loads instantly (no transition message)
+1. Game field updates to show new level layout:
+
+- Snake resets to starting position (3 segments)
+- New obstacle/platform configuration
+- New food placement
+- New exit location
+
 4. Score display updates: Level number increments
-5. Moves counter resets to 0
-6. Length resets to 3
-7. Game is ready for player input
+1. Moves counter resets to 0
+1. Length resets to 3
+1. Game is ready for player input
 
 **Special Case - Final Level:**
 
@@ -118,7 +130,7 @@ sequenceDiagram
 
 **Exit:** Player is in active gameplay state on new level, or game has ended (final level)
 
----
+______________________________________________________________________
 
 ## Flow 4: Game Over & Recovery
 
@@ -129,19 +141,23 @@ sequenceDiagram
 **Steps:**
 
 1. Collision is detected
-2. "Game Over" overlay appears immediately
-3. Overlay displays two buttons:
-  - "Restart Level" (primary action)
-  - "Back to Level 1" (secondary action)
+1. "Game Over" overlay appears immediately
+1. Overlay displays two buttons:
+
+- "Restart Level" (primary action)
+- "Back to Level 1" (secondary action)
+
 4. Game waits for player choice:
-  - **If "Restart Level":** Current level reloads with reset state (snake at start, moves = 0, length = 3)
-  - **If "Back to Level 1":** Level 1 loads with reset state
+
+- **If "Restart Level":** Current level reloads with reset state (snake at start, moves = 0, length = 3)
+- **If "Back to Level 1":** Level 1 loads with reset state
+
 5. Overlay closes
-6. Game is ready for player input
+1. Game is ready for player input
 
 **Exit:** Player is in active gameplay state on chosen level
 
----
+______________________________________________________________________
 
 ## Flow 5: Manual Restart
 
@@ -152,16 +168,18 @@ sequenceDiagram
 **Steps:**
 
 1. Current level immediately reloads
-2. Game state resets:
-  - Snake returns to starting position (3 segments)
-  - Moves counter resets to 0
-  - Length resets to 3
-  - Food and obstacles return to initial positions
+1. Game state resets:
+
+- Snake returns to starting position (3 segments)
+- Moves counter resets to 0
+- Length resets to 3
+- Food and obstacles return to initial positions
+
 3. Game is ready for player input
 
 **Exit:** Player is in active gameplay state on same level with fresh start
 
----
+______________________________________________________________________
 
 ## Flow 6: Input Blocking During Gravity
 
@@ -172,14 +190,14 @@ sequenceDiagram
 **Steps:**
 
 1. Player makes a move (directional key press)
-2. Input handler is disabled
-3. Gravity resolves instantly (snake falls to final position)
-4. Input handler is re-enabled
-5. Game is ready for next player input
+1. Input handler is disabled
+1. Gravity resolves instantly (snake falls to final position)
+1. Input handler is re-enabled
+1. Game is ready for next player input
 
 **Note:** Since gravity is instant (no animation), this blocking is imperceptible to the player but prevents input queue issues.
 
----
+______________________________________________________________________
 
 ## Key Interaction Principles
 
@@ -212,4 +230,3 @@ sequenceDiagram
 - Obstacles: Solid, impassable appearance
 - Exit: Visually distinct goal marker
 - No animations (instant state changes)
-

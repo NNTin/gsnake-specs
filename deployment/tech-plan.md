@@ -47,9 +47,9 @@ concurrency:
 Each deployment is atomic—either fully succeeds or fully fails. The GitHub Pages action handles the deployment process:
 
 1. Prepares deployment directory with build artifacts
-2. Updates metadata files (versions.json for tag deployments)
-3. Generates static pages (root redirect, versions index)
-4. Commits and pushes to gh-pages branch atomically
+1. Updates metadata files (versions.json for tag deployments)
+1. Generates static pages (root redirect, versions index)
+1. Commits and pushes to gh-pages branch atomically
 
 If any step fails, the entire deployment is rolled back, preventing partial deployment states.
 
@@ -132,7 +132,7 @@ flowchart TD
     Q --> R[Deployment Complete]
 ```
 
----
+______________________________________________________________________
 
 ## Data Model
 
@@ -210,7 +210,7 @@ The gh-pages branch maintains the following structure:
 
 **Persistence**: All version directories persist indefinitely. If a version is redeployed (same tag pushed again), the existing directory is overwritten. Main branch directory is overwritten on each main deployment.
 
----
+______________________________________________________________________
 
 ## Component Architecture
 

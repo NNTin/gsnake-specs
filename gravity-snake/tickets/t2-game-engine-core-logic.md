@@ -62,10 +62,10 @@ Private Methods:
 **Movement Order:**
 
 1. Calculate new head position
-2. Check for food BEFORE modifying snake
-3. If food: unshift head (grow), don't pop tail
-4. If no food: unshift head, pop tail
-5. Apply gravity to entire snake
+1. Check for food BEFORE modifying snake
+1. If food: unshift head (grow), don't pop tail
+1. If no food: unshift head, pop tail
+1. Apply gravity to entire snake
 
 **Gravity Physics:**
 
@@ -89,4 +89,3 @@ Private Methods:
 ## Dependencies
 
 - `ticket:T1` - Requires types and project structure
-

@@ -2,7 +2,7 @@
 
 This spec defines the user flows for accessing and deploying gSnake through GitHub Pages. The experience is intentionally minimal—no version management UI, seamless redirects, and simple version discovery through external documentation.
 
----
+______________________________________________________________________
 
 ## Flow 1: Player Accessing Game via Root URL
 
@@ -13,14 +13,14 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Player navigates to root URL in browser
-2. JavaScript redirect executes instantly (no loading screen or delay)
-3. Browser URL changes to latest version (e.g., `nntin.github.io/gSnake/v0.1.1`)
-4. Game loads and player can start playing
-5. No visual indication of version in game UI—version only visible in URL bar
+1. JavaScript redirect executes instantly (no loading screen or delay)
+1. Browser URL changes to latest version (e.g., `nntin.github.io/gSnake/v0.1.1`)
+1. Game loads and player can start playing
+1. No visual indication of version in game UI—version only visible in URL bar
 
 **Exit**: Player plays the game or closes the browser
 
----
+______________________________________________________________________
 
 ## Flow 2: Player Accessing Specific Version
 
@@ -31,14 +31,14 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Player navigates to versioned URL in browser
-2. Game loads directly at that version
-3. No redirect occurs—URL remains unchanged
-4. Player plays the game at that specific version
-5. No visual distinction between versions—gameplay experience identical
+1. Game loads directly at that version
+1. No redirect occurs—URL remains unchanged
+1. Player plays the game at that specific version
+1. No visual distinction between versions—gameplay experience identical
 
 **Exit**: Player plays the game or closes the browser
 
----
+______________________________________________________________________
 
 ## Flow 3: Player Accessing Non-Existent Version
 
@@ -49,15 +49,15 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Player navigates to non-existent version URL in browser
-2. GitHub Pages serves default 404 page
-3. Player realizes the version doesn't exist
-4. Player can navigate back or try a different URL
+1. GitHub Pages serves default 404 page
+1. Player realizes the version doesn't exist
+1. Player can navigate back or try a different URL
 
 **Exit**: Player leaves the 404 page
 
 **Note**: No custom 404 handling is implemented. GitHub Pages' default 404 page is used for simplicity.
 
----
+______________________________________________________________________
 
 ## Flow 4: Player Exploring Version History
 
@@ -68,12 +68,12 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Player navigates to versions index page
-2. Page displays list of all tagged versions with release dates
-3. Versions shown in reverse chronological order (newest first)
-4. Each version is a clickable link
-5. Player clicks on desired version
-6. Browser navigates to that version's URL
-7. Game loads at selected version
+1. Page displays list of all tagged versions with release dates
+1. Versions shown in reverse chronological order (newest first)
+1. Each version is a clickable link
+1. Player clicks on desired version
+1. Browser navigates to that version's URL
+1. Game loads at selected version
 
 **Exit**: Player is now in Flow 2 (playing specific version)
 
@@ -172,7 +172,7 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 </html>
 ```
 
----
+______________________________________________________________________
 
 ## Flow 5: Developer Testing Main Branch
 
@@ -183,14 +183,14 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Developer navigates to main branch URL
-2. Game loads with latest code from main branch
-3. No visual distinction from versioned releases—identical appearance
-4. Developer tests new features or changes
-5. Can test on any device with browser access
+1. Game loads with latest code from main branch
+1. No visual distinction from versioned releases—identical appearance
+1. Developer tests new features or changes
+1. Can test on any device with browser access
 
 **Exit**: Developer finishes testing or closes browser
 
----
+______________________________________________________________________
 
 ## Flow 6: Developer Deploying New Version
 
@@ -201,19 +201,19 @@ This spec defines the user flows for accessing and deploying gSnake through GitH
 **Steps**:
 
 1. Developer creates Git tag locally with semantic version format
-2. Developer pushes tag to GitHub repository
-3. GitHub Actions workflow automatically triggers
-4. Workflow runs build validation and type checking
-5. Workflow updates `package.json` version to match tag
-6. Workflow commits version change back to the branch where the tag was created
-7. Workflow builds the game with correct base path
-8. Workflow deploys to GitHub Pages at `/v{version}` path
-9. Workflow updates root redirect to point to new version
-10. Workflow regenerates versions index page with new entry
-11. New version is now accessible at its versioned URL
-12. Root URL now redirects to this new version
+1. Developer pushes tag to GitHub repository
+1. GitHub Actions workflow automatically triggers
+1. Workflow runs build validation and type checking
+1. Workflow updates `package.json` version to match tag
+1. Workflow commits version change back to the branch where the tag was created
+1. Workflow builds the game with correct base path
+1. Workflow deploys to GitHub Pages at `/v{version}` path
+1. Workflow updates root redirect to point to new version
+1. Workflow regenerates versions index page with new entry
+1. New version is now accessible at its versioned URL
+1. Root URL now redirects to this new version
 
-**Exit**: Version is deployed and accessible to all user  **Exit**: Version is deployed and accessible to all users
+**Exit**: Version is deployed and accessible to all user **Exit**: Version is deployed and accessible to all users
 
 **Exit**: Version is deployed and accessible to all user**Deployment Feedback**: Developer checks GitHub Actions UI to verify deployment success or investigate failures. No custom notifications are provided beyond GitHub's standard workflow notifications.
 
@@ -238,7 +238,7 @@ sequenceDiagram
     Note over Pages: New version accessible at<br/>nntin.github.io/gSnake/v0.1.1
 ```
 
----
+______________________________________________________________________
 
 ## Flow 7: Developer Deploying Main Branch
 
@@ -249,18 +249,18 @@ sequenceDiagram
 **Steps**:
 
 1. Developer pushes commits to main branch
-2. GitHub Actions workflow automatically triggers
-3. Workflow runs build validation and type checking
-4. Workflow builds the game with base path `/gSnake/main`
-5. Workflow deploys to GitHub Pages at `/main` path
-6. Main branch build is updated and accessible
-7. No changes to versioned releases or root redirect
+1. GitHub Actions workflow automatically triggers
+1. Workflow runs build validation and type checking
+1. Workflow builds the game with base path `/gSnake/main`
+1. Workflow deploys to GitHub Pages at `/main` path
+1. Main branch build is updated and accessible
+1. No changes to versioned releases or root redirect
 
-**Exit**: Main branch deployment updated, accessible for testin  **Exit**: Main branch deployment updated, accessible for testing
+**Exit**: Main branch deployment updated, accessible for testin **Exit**: Main branch deployment updated, accessible for testing
 
 **Exit**: Main branch deployment updated, accessible for testin**Deployment Feedback**: Developer checks GitHub Actions UI to verify deployment success or investigate failures. No custom notifications are provided beyond GitHub's standard workflow notifications.
 
----
+______________________________________________________________________
 
 ## Key Design Decisions
 

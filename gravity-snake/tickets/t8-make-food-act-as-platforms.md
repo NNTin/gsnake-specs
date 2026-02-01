@@ -31,8 +31,8 @@ if (this.level.food.some(f => f.x === nextX && f.y === nextY)) {
 **Logic Flow:**
 
 1. Player moves snake head onto food → food is collected, snake grows
-2. Gravity applies → remaining food items act as platforms
-3. Snake can stand on uncollected food
+1. Gravity applies → remaining food items act as platforms
+1. Snake can stand on uncollected food
 
 ## Strategic Implications
 

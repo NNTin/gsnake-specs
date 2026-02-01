@@ -33,7 +33,7 @@ fi
 
 # Run mdformat check (fails on formatting issues)
 echo "Checking Markdown formatting with mdformat..."
-mdformat --check .
+git ls-files -z '*.md' | xargs -0 mdformat --check
 
 # Run pymarkdown lint (fails on lint errors)
 echo "Linting Markdown files with pymarkdownlnt..."

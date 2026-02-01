@@ -35,6 +35,6 @@ git config --unset core.hooksPath
 The pre-commit hook runs the following checks:
 
 1. **Format Check**: `mdformat --check .`
-2. **Lint Check**: `pymarkdown scan .`
+1. **Lint Check**: `pymarkdown scan .`
 
 **Note: Tests are NOT run in pre-commit hooks for speed.** This hook focuses on Markdown formatting and linting only.

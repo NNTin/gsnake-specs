@@ -74,4 +74,3 @@ export function connectGameEngineToStores(engine: GameEngine): void {
 ## Dependencies
 
 - `ticket:T1` - Requires types and project structure
-

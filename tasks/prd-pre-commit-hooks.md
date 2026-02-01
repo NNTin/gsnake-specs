@@ -14,17 +14,21 @@ Add opt-in, repository-visible pre-commit hooks for each gSnake submodule so mai
 ## User Stories
 
 ### US-001: Enable shared hooks per repo
+
 **Description:** As a maintainer, I want to enable shared hooks from `.github/hooks` so I can run consistent checks before committing.
 
 **Acceptance Criteria:**
+
 - [ ] `.github/hooks/README.md` explains how to enable hooks with `git config core.hooksPath .github/hooks`
 - [ ] README includes verification and disable steps
 - [ ] Typecheck/lint passes
 
 ### US-002: Pre-commit hook for gsnake-levels
+
 **Description:** As a maintainer, I want a pre-commit hook for `gsnake-levels` that runs format, lint, typecheck, and build without tests.
 
 **Acceptance Criteria:**
+
 - [ ] Hook runs `cargo fmt --all -- --check`
 - [ ] Hook runs `cargo clippy --all-targets -- -D warnings`
 - [ ] Hook runs `cargo check`
@@ -33,9 +37,11 @@ Add opt-in, repository-visible pre-commit hooks for each gSnake submodule so mai
 - [ ] Typecheck/lint passes
 
 ### US-003: Pre-commit hook for gsnake-web
+
 **Description:** As a maintainer, I want a pre-commit hook for `gsnake-web` that runs format, lint, typecheck, and build without tests.
 
 **Acceptance Criteria:**
+
 - [ ] Hook runs formatter (e.g., Prettier) and linter (e.g., ESLint)
 - [ ] Hook runs `npm run check`
 - [ ] Hook runs a build command that does not trigger tests (e.g., `npm run build:hook`)
@@ -43,9 +49,11 @@ Add opt-in, repository-visible pre-commit hooks for each gSnake submodule so mai
 - [ ] Typecheck/lint passes
 
 ### US-004: Pre-commit hook for gsnake-specs
+
 **Description:** As a maintainer, I want a pre-commit hook for `gsnake-specs` that formats and lints Markdown using Python tooling.
 
 **Acceptance Criteria:**
+
 - [ ] Python tooling exists (`pyproject.toml`) for `mdformat` and `markdownlint` (or equivalent)
 - [ ] Hook runs formatter and linter on Markdown files
 - [ ] Hook includes a no-op typecheck/build step if not applicable
@@ -53,9 +61,11 @@ Add opt-in, repository-visible pre-commit hooks for each gSnake submodule so mai
 - [ ] Typecheck/lint passes
 
 ### US-005: Document hook scope and exclusions
+
 **Description:** As a maintainer, I want clarity on which checks are run and that tests are excluded.
 
 **Acceptance Criteria:**
+
 - [ ] Hook scripts include brief comments stating they avoid tests
 - [ ] Documentation lists the exact commands run for each submodule
 - [ ] Typecheck/lint passes

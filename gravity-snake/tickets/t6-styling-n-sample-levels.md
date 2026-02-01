@@ -95,4 +95,3 @@ Apply visual styling to match the wireframe design and create 3-5 sample levels 
 ## Dependencies
 
 - `ticket:T5` - Requires fully integrated game
-

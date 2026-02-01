@@ -10,10 +10,10 @@ gSnake currently supports a limited set of game objects (obstacles, food, snake,
 - **Level designers** lack creative building blocks to express diverse puzzle concepts (block-pushing, timing challenges, physics-based puzzles)
 - **Future contributors** face a rigid object system that makes adding new game elements difficult
 
-**Current State:**  
+**Current State:**\
 The game uses a simple object model defined in file:gsnake-core/engine/core/src/models.rs with `CellType` enum (Empty, SnakeHead, SnakeBody, Food, Obstacle, Exit) and position-based collections in `LevelDefinition`. All objects have static behavior except the snake, which responds to gravity. Food acts as both collectible and platform. Obstacles are solid barriers. The exit requires all food collection before level completion.
 
-**The Problem:**  
+**The Problem:**\
 Levels feel samey because all puzzles rely on the same basic mechanics: navigate around obstacles, collect food, reach exit. There's no way to create:
 
 - Block-pushing puzzles (Sokoban-style)
@@ -69,7 +69,6 @@ This limitation stems from the small object vocabulary and lack of interactive/d
 ## Success Criteria
 
 1. **Mechanics Work Correctly:** All new objects behave as specified (see detailed requirements from clarification)
-2. **System Extensibility:** Adding future object types follows the same pattern established here
-3. **Enhanced Engagement:** New objects enable puzzle types that weren't possible before
-4. **Clean Implementation:** Contract changes are minimal and additive; existing code paths remain stable
-
+1. **System Extensibility:** Adding future object types follows the same pattern established here
+1. **Enhanced Engagement:** New objects enable puzzle types that weren't possible before
+1. **Clean Implementation:** Contract changes are minimal and additive; existing code paths remain stable

@@ -82,4 +82,3 @@ onMount(() => {
 - `ticket:T2` - Requires GameEngine
 - `ticket:T3` - Requires stores and adapter
 - `ticket:T4` - Requires UI components
-

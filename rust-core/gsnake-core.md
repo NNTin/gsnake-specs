@@ -4,22 +4,23 @@
 **Status:** Implemented
 **Last Updated:** 2026-01-18
 
----
+______________________________________________________________________
 
 ## Table of Contents
-1. [Background](#1-background)
-2. [Map Architecture](#2-map-architecture)
-3. [Define Interfaces](#3-define-interfaces)
-4. [Define State](#4-define-state)
-5. [Trace Flows](#5-trace-flows)
-6. [Observe System](#6-observe-system)
-7. [Define Integration](#7-define-integration)
-8. [Enforce Constraints](#8-enforce-constraints)
-9. [Build and Development](#9-build-and-development)
-10. [Performance Characteristics](#10-performance-characteristics)
-11. [References](#11-references)
 
----
+1. [Background](#1-background)
+1. [Map Architecture](#2-map-architecture)
+1. [Define Interfaces](#3-define-interfaces)
+1. [Define State](#4-define-state)
+1. [Trace Flows](#5-trace-flows)
+1. [Observe System](#6-observe-system)
+1. [Define Integration](#7-define-integration)
+1. [Enforce Constraints](#8-enforce-constraints)
+1. [Build and Development](#9-build-and-development)
+1. [Performance Characteristics](#10-performance-characteristics)
+1. [References](#11-references)
+
+______________________________________________________________________
 
 ## 1. Background
 
@@ -44,11 +45,11 @@ gSnake is a gravity-based puzzle game where the player navigates a snake through
 ### 1.3 Key Principles
 
 1. **Separation of Concerns:** Core engine is filesystem-agnostic and I/O-free; hosts inject data and handle rendering
-2. **Push-Based Architecture:** Engine emits `Frame` objects to registered callbacks on state changes
-3. **Type Safety:** Strong typing via Rust with serialization contracts for cross-language boundaries
-4. **Single Source of Truth:** One codebase, multiple compilation targets (WASM, native binary)
+1. **Push-Based Architecture:** Engine emits `Frame` objects to registered callbacks on state changes
+1. **Type Safety:** Strong typing via Rust with serialization contracts for cross-language boundaries
+1. **Single Source of Truth:** One codebase, multiple compilation targets (WASM, native binary)
 
----
+______________________________________________________________________
 
 ## 2. Map Architecture
 
@@ -88,6 +89,7 @@ gsnake-core/
 ### 2.2 Module Boundaries
 
 #### Core Library (`gsnake-core`)
+
 - **Responsibility:** Pure game logic, state management, physics simulation
 - **Dependencies:** `serde`, `serde_json`, `ts-rs` (for TypeScript type generation)
 - **Exports:** Data models, `GameEngine`, level parsing utilities
@@ -96,6 +98,7 @@ gsnake-core/
 **Source:** `/home/nntin/git/gSnake/gsnake-core/engine/core/`
 
 #### WASM Binding (`gsnake-wasm`)
+
 - **Responsibility:** JavaScript FFI bridge for web environments
 - **Dependencies:** `wasm-bindgen`, `serde-wasm-bindgen`, `js-sys`, `web-sys`
 - **Exports:** `WasmGameEngine` wrapper, `getLevels()` helper
@@ -104,6 +107,7 @@ gsnake-core/
 **Source:** `/home/nntin/git/gSnake/gsnake-core/engine/bindings/wasm/src/lib.rs`
 
 #### CLI Application (`gsnake-cli`)
+
 - **Responsibility:** Native terminal gameplay interface
 - **Dependencies:** `crossterm`, `ratatui`, `anyhow`
 - **Capabilities:** Real-time keyboard input, TUI rendering, level file loading
@@ -173,7 +177,7 @@ All cross-language communication uses JSON serialization with strict contracts:
 | **State Query** | None | `GameState` struct | `/home/nntin/git/gSnake/gsnake-core/engine/core/src/models.rs` (lines 61-83) |
 | **Error Reporting** | N/A | `ContractError` | `/home/nntin/git/gSnake/gsnake-core/engine/core/src/models.rs` (lines 201-230) |
 
----
+______________________________________________________________________
 
 ## 3. Define Interfaces
 
@@ -374,6 +378,7 @@ pub struct Frame {
 ```
 
 **Contract:**
+
 ```json
 {
   "grid": [[CellType]], // 2D array indexed as grid[y][x]
@@ -433,7 +438,7 @@ pub enum ContractErrorKind {
 
 **Usage:** Returned as `Err(JsValue)` in WASM methods, logged in CLI
 
----
+______________________________________________________________________
 
 ## 4. Define State
 
@@ -489,15 +494,17 @@ pub struct Snake {
 ```
 
 **Invariants:**
+
 - Head is always at `segments[0]`
 - Segments are ordered from head to tail
 - Direction is `Some` during gameplay, `None` on initialization
 
 **Movement Logic:**
+
 1. New head position calculated based on direction
-2. New head inserted at `segments[0]`
-3. If food eaten: tail remains (snake grows)
-4. If no food: tail removed via `segments.pop()`
+1. New head inserted at `segments[0]`
+1. If food eaten: tail remains (snake grows)
+1. If no food: tail removed via `segments.pop()`
 
 **Source:** `/home/nntin/git/gSnake/gsnake-core/engine/core/src/engine.rs` (lines 76-94)
 
@@ -519,6 +526,7 @@ pub struct LevelState {
 **Purpose:** Runtime mutable state derived from immutable `LevelDefinition`
 
 **Mutations:**
+
 - `food` vector shrinks as items are collected
 - `snake.segments` grows/shrinks with gameplay
 - All other fields remain constant during a level
@@ -566,7 +574,7 @@ Errors are categorized by `ContractErrorKind` and surfaced via `Result` types:
 **CLI Error Handling:** Uses `anyhow::Result` with context propagation
 **Source:** `/home/nntin/git/gSnake/gsnake-core/engine/bindings/cli/src/main.rs` (lines 22-27)
 
----
+______________________________________________________________________
 
 ## 5. Trace Flows
 
@@ -713,7 +721,7 @@ processMove(direction: JsValue)                [wasm/lib.rs:55]
 
 **User Impact:** Web UI ignores the input; CLI shows no state change
 
----
+______________________________________________________________________
 
 ## 6. Observe System
 
@@ -736,6 +744,7 @@ pub fn init_panic_hook() {
 ```
 
 **Debug Helper:**
+
 ```rust
 #[wasm_bindgen]
 pub fn log(s: &str) {
@@ -751,6 +760,7 @@ pub fn log(s: &str) {
 Uses `anyhow::Context` for error chain propagation
 
 **Example:**
+
 ```rust
 load_levels(&levels_path)
     .with_context(|| format!(
@@ -781,6 +791,7 @@ All WASM boundary errors are serialized as `ContractError` objects:
 **Test Suite:** `/home/nntin/git/gSnake/gsnake-core/engine/core/tests/contract_tests.rs`
 
 **Serialization Tests:**
+
 - Enum string values (lines 14-103)
 - CamelCase field names (lines 132-183)
 - Error context serialization (lines 186-223)
@@ -798,11 +809,13 @@ All WASM boundary errors are serialized as `ContractError` objects:
 **File:** `/home/nntin/git/gSnake/gsnake-core/engine/bindings/cli/src/ui.rs` (lines 63-80)
 
 Displays:
+
 - Current level number
 - Move count
 - Food collected / total food
 
 **Rendered as:**
+
 ```
 ╔══════════════════════════════════════════╗
 ║  Level: 1 | Moves: 23 | Food: 3/5        ║
@@ -824,6 +837,7 @@ Generates `.d.ts` files for TypeScript consumers to ensure type safety.
 **Core Logic Tests:** `/home/nntin/git/gSnake/gsnake-core/engine/core/src/engine.rs` (lines 292-509)
 
 Coverage:
+
 - Basic movement and gravity (lines 320-337)
 - Opposite direction blocking (lines 341-352)
 - Food collection and growth (lines 354-368)
@@ -836,6 +850,7 @@ Coverage:
 **File:** `/home/nntin/git/gSnake/gsnake-core/engine/core/tests/contract_tests.rs`
 
 Ensures:
+
 - Enum serialization consistency (lines 14-103)
 - Struct field naming conventions (lines 110-183)
 - Round-trip serialization integrity (lines 229-307)
@@ -843,7 +858,7 @@ Ensures:
 
 **Fixture Output:** `/home/nntin/git/gSnake/gsnake-core/engine/core/tests/fixtures/`
 
----
+______________________________________________________________________
 
 ## 7. Define Integration
 
@@ -862,6 +877,7 @@ Web App Startup
 ```
 
 **TypeScript Usage:**
+
 ```typescript
 import init, { WasmGameEngine, getLevels } from './wasm/gsnake_wasm.js';
 
@@ -882,22 +898,28 @@ engine.processMove({ North });
 #### Data Serialization
 
 **Direction:** Maps to JS strings
+
 ```rust
 pub enum Direction { North, South, East, West }
 ```
+
 ↓
+
 ```javascript
 "North" | "South" | "East" | "West"
 ```
 
 **Frame:** Maps to JS object
+
 ```rust
 pub struct Frame {
     pub grid: Vec<Vec<CellType>>,
     pub state: GameState,
 }
 ```
+
 ↓
+
 ```javascript
 {
   grid: CellType[][],  // 2D array
@@ -937,6 +959,7 @@ pub fn process_move(&mut self, direction: JsValue) -> Result<JsValue, JsValue> {
 **Lines:** 54-80
 
 **Error Object:**
+
 ```javascript
 {
   kind: "inputRejected",
@@ -1011,6 +1034,7 @@ Frame → UI::render()                            [ui.rs:33]
 ```
 
 **Cell Rendering:**
+
 ```rust
 CellType::SnakeHead  → "●●" (Green)
 CellType::SnakeBody  → "██" (Light Green)
@@ -1092,17 +1116,20 @@ pub fn levels_path() -> PathBuf {
 #### WASM Target
 
 **Build Command:**
+
 ```bash
 cd gsnake-core/engine/bindings/wasm
 wasm-pack build --target web --release
 ```
 
 **Output:** `/home/nntin/git/gSnake/gsnake-core/engine/bindings/wasm/pkg/`
+
 - `gsnake_wasm.js` - JavaScript glue code
 - `gsnake_wasm_bg.wasm` - WebAssembly binary
 - `gsnake_wasm.d.ts` - TypeScript definitions
 
 **Optimizations:** `/home/nntin/git/gSnake/gsnake-core/engine/bindings/wasm/Cargo.toml` (lines 27-30)
+
 ```toml
 [profile.release]
 opt-level = "z"      # Optimize for size
@@ -1113,6 +1140,7 @@ codegen-units = 1    # Single codegen unit for better optimization
 #### Native CLI Target
 
 **Build Command:**
+
 ```bash
 cd gsnake-core/engine/bindings/cli
 cargo build --release
@@ -1121,16 +1149,18 @@ cargo build --release
 **Output:** `/home/nntin/git/gSnake/gsnake-core/target/release/gsnake-cli`
 
 **Run:**
+
 ```bash
 ./target/release/gsnake-cli
 ```
 
 **Requirements:**
+
 - Must be run from workspace root (for levels.json access)
 - Terminal must support Unicode characters
 - Minimum terminal size: `(grid_width * 2 + 4) × (grid_height + 6)`
 
----
+______________________________________________________________________
 
 ## 8. Enforce Constraints
 
@@ -1258,19 +1288,21 @@ cargo build --release
 - **Alternative for large assets:** Fetch at runtime instead of embedding
 - **Verified by:** Build artifact size monitoring (not automated)
 
----
+______________________________________________________________________
 
 ## 9. Build and Development
 
 ### 9.1 Development Environment Setup
 
 **Prerequisites:**
+
 - Rust toolchain (1.70+) with `wasm32-unknown-unknown` target
 - Node.js 20+
 - Python 3.8+ (for build scripts)
 - wasm-pack (`cargo install wasm-pack`)
 
 **Installation:**
+
 ```bash
 # Clone repository
 git clone https://github.com/NNTin/gSnake.git
@@ -1297,11 +1329,13 @@ python scripts/build_wasm.py
 ```
 
 **What it does:**
+
 1. Changes to `gsnake-core/engine/bindings/wasm/`
-2. Runs `wasm-pack build --target web --release`
-3. Output: `pkg/` directory with `.wasm`, `.js`, and `.d.ts` files
+1. Runs `wasm-pack build --target web --release`
+1. Output: `pkg/` directory with `.wasm`, `.js`, and `.d.ts` files
 
 **Manual build:**
+
 ```bash
 cd gsnake-core/engine/bindings/wasm
 wasm-pack build --target web --release
@@ -1310,6 +1344,7 @@ wasm-pack build --target web --release
 **Output location:** `gsnake-core/engine/bindings/wasm/pkg/`
 
 **Optimization flags** (`Cargo.toml`):
+
 ```toml
 [profile.release]
 opt-level = "z"      # Optimize for size
@@ -1327,6 +1362,7 @@ cargo build --release
 **Output:** `gsnake-core/target/release/gsnake-cli`
 
 **Run:**
+
 ```bash
 ./gsnake-core/target/release/gsnake-cli
 ```
@@ -1342,34 +1378,39 @@ python scripts/generate_ts_types.py
 ```
 
 **What it does:**
+
 1. Runs `cargo run -p gsnake-core --bin export_ts`
-2. Generates TypeScript type definitions from Rust structs
-3. Output: `/home/nntin/git/gSnake/gsnake-web/types/models.ts`
+1. Generates TypeScript type definitions from Rust structs
+1. Output: `/home/nntin/git/gSnake/gsnake-web/types/models.ts`
 
 **Implementation:** `/home/nntin/git/gSnake/gsnake-core/engine/core/src/bin/export_ts.rs`
 
 **Exported types:**
+
 - Position, GridSize, Direction, CellType, GameStatus
 - LevelDefinition, GameState, Frame
 - ContractError, ContractErrorKind
 
 **Workflow:**
+
 1. Rust types derive `#[derive(TS)]` trait
-2. `export_ts.rs` calls `T::export()` for each type
-3. Types written to single `models.ts` file
-4. Web app imports types for compile-time safety
+1. `export_ts.rs` calls `T::export()` for each type
+1. Types written to single `models.ts` file
+1. Web app imports types for compile-time safety
 
 ### 9.3 Testing
 
 #### Unit Tests
 
 **Core library tests:**
+
 ```bash
 cd gsnake-core/engine/core
 cargo test
 ```
 
 **Coverage:**
+
 - Basic movement and gravity
 - Opposite direction blocking
 - Food collection and growth
@@ -1381,12 +1422,14 @@ cargo test
 #### Contract Tests
 
 **Generate test fixtures:**
+
 ```bash
 cd gsnake-core/engine/core
 cargo test generate_contract_fixtures
 ```
 
 **Validates:**
+
 - String enum serialization (not numeric)
 - CamelCase JSON field names
 - Round-trip serialization integrity
@@ -1399,17 +1442,20 @@ cargo test generate_contract_fixtures
 #### End-to-End Tests
 
 **Playwright browser tests:**
+
 ```bash
 npm run test:e2e
 ```
 
 **What it tests:**
+
 - Keyboard input simulation (arrow keys, WASD)
 - DOM grid state assertions
 - Movement mechanics
 - Gravity physics (snake falls off platform)
 
 **Configuration:** `/home/nntin/git/gSnake/package.json`
+
 ```json
 {
   "scripts": {
@@ -1420,6 +1466,7 @@ npm run test:e2e
 ```
 
 **Reporting:**
+
 - Allure reports with video recording
 - Screenshots on failure
 - Chromium browser with `--with-deps`
@@ -1429,10 +1476,11 @@ npm run test:e2e
 **Script:** `/home/nntin/git/gSnake/scripts/test_integration.py`
 
 **Orchestrates:**
+
 1. Rebuild WASM binary
-2. Install web dependencies
-3. Run E2E tests
-4. Generate reports
+1. Install web dependencies
+1. Run E2E tests
+1. Generate reports
 
 **Used by:** CI/CD and local development
 
@@ -1441,34 +1489,42 @@ npm run test:e2e
 **Workflow:** `/home/nntin/git/gSnake/.github/workflows/deploy.yml`
 
 **Triggers:**
+
 - Push to `main` branch
 - Version tags (e.g., `v0.2.1`)
 
 **Steps:**
+
 1. **Setup:**
+
    - Rust toolchain + `wasm32-unknown-unknown` target
    - Node.js 20
    - Playwright with Chromium
 
-2. **Build:**
+1. **Build:**
+
    - Generate TypeScript types (`scripts/generate_ts_types.py`)
    - Build WASM (`scripts/build_wasm.py`)
    - TypeScript type checking (`npm --prefix gsnake-web run check`)
 
-3. **Test:**
+1. **Test:**
+
    - Contract tests (`cargo test` in `engine/core`)
    - E2E tests (`scripts/test_integration.py`)
 
-4. **Deploy (main branch):**
+1. **Deploy (main branch):**
+
    - Deploy to `/gSnake/main/` on GitHub Pages
    - Inject base path via `VITE_BASE_PATH=/gSnake/main`
 
-5. **Deploy (version tags):**
+1. **Deploy (version tags):**
+
    - Deploy to `/gSnake/v{version}/`
    - Update `versions.json` registry in `gh-pages` branch
    - Inject base path via `VITE_BASE_PATH=/gSnake/v{version}`
 
 **Deployment strategy:**
+
 - Main branch: Latest development build
 - Version tags: Stable releases with version registry
 - Base path injection: Supports subdirectory hosting
@@ -1478,6 +1534,7 @@ npm run test:e2e
 **Allocator:** `wee_alloc::WeeAlloc`
 
 **Configuration:**
+
 ```rust
 // /home/nntin/git/gSnake/gsnake-core/engine/bindings/wasm/src/lib.rs
 #[global_allocator]
@@ -1485,21 +1542,25 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 ```
 
 **Purpose:**
+
 - Smaller binary size (~1-2KB allocator vs. default ~10KB)
 - Optimized for WASM environments
 - Trade-off: Potentially slower allocation, but negligible for game's usage pattern
 
 **Memory layout:**
+
 - Static data: Embedded `levels.json` via `include_str!` (compile-time)
 - Stack: Game state structs (Position, Snake, LevelState)
 - Heap: Collections (Vec for snake segments, food, obstacles)
 
 **Memory constraints:**
+
 - No explicit limits (relies on browser/WASM runtime limits)
 - Bounded by level design (grid size, entity counts)
 - No unbounded growth during gameplay
 
 **Panic handling:**
+
 ```rust
 #[wasm_bindgen(start)]
 pub fn init_panic_hook() {
@@ -1518,6 +1579,7 @@ pub fn init_panic_hook() {
 **Packaging:** `pyproject.toml` with `pip install -e .`
 
 **Expected architecture:**
+
 - PyO3 bindings to Rust core
 - Similar API to WASM/CLI (uniform level access)
 - Python-native error handling
@@ -1525,12 +1587,13 @@ pub fn init_panic_hook() {
 **Current state:** No PyO3 implementation found in sources
 
 **Future implementation path:**
-1. Add PyO3 dependency
-2. Expose `GameEngine` via Python wrapper class
-3. Serialize `Frame` to Python dictionaries
-4. Match WASM API surface for consistency
 
----
+1. Add PyO3 dependency
+1. Expose `GameEngine` via Python wrapper class
+1. Serialize `Frame` to Python dictionaries
+1. Match WASM API surface for consistency
+
+______________________________________________________________________
 
 ## 10. Performance Characteristics
 
@@ -1545,10 +1608,12 @@ pub fn init_panic_hook() {
 | **generate_frame** | O(W × H + S + F + O) | O(W × H) | Grid allocation + entity placement |
 
 **Key bottlenecks:**
+
 - **Gravity loop:** Worst case = snake falls entire grid height (e.g., K=20)
 - **Frame generation:** Full grid allocation every frame (e.g., 20×20 = 400 cells)
 
 **Optimization notes:**
+
 - Current implementation prioritizes correctness and readability
 - No profiling or benchmarking infrastructure
 - Game scale is small enough that performance is not a concern (grids typically ≤ 20×20)
@@ -1556,16 +1621,19 @@ pub fn init_panic_hook() {
 ### 10.2 Memory Usage
 
 **Per-frame allocation:**
+
 - `Frame.grid`: `Vec<Vec<CellType>>` = W × H × 1 byte ≈ 400 bytes for 20×20 grid
 - Serialized to JSON: ~2-3KB depending on grid size
 
 **Engine state:**
+
 - `Snake.segments`: `Vec<Position>` = S × 8 bytes (max ~400 positions)
 - `LevelState.food`: `Vec<Position>` = F × 8 bytes (typically ~80 bytes for 10 food)
 - `LevelState.obstacles`: `Vec<Position>` = O × 8 bytes
 - Total state: < 5KB for typical levels
 
 **WASM bundle size:**
+
 - Not measured in current codebase
 - Optimization flags in place (`opt-level = "z"`, `lto = true`)
 - `wee_alloc` reduces allocator overhead by ~8KB
@@ -1573,18 +1641,20 @@ pub fn init_panic_hook() {
 ### 10.3 Known Gaps
 
 **No performance testing infrastructure:**
+
 - No benchmarks (Criterion.rs or similar)
 - No WASM bundle size tracking
 - No memory profiling
 - No frame generation profiling
 
 **Potential future work:**
+
 - Add `#[bench]` tests for critical paths
 - Track WASM bundle size in CI
 - Profile frame generation for larger grids
 - Consider differential rendering (only changed cells)
 
----
+______________________________________________________________________
 
 ## 11. References
 
@@ -1621,6 +1691,7 @@ All paths are absolute from repository root:
 ### 11.3 Dependencies
 
 #### Core Library
+
 ```toml
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -1628,6 +1699,7 @@ ts-rs = "7.0"  # TypeScript type generation
 ```
 
 #### WASM Binding
+
 ```toml
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
@@ -1638,6 +1710,7 @@ console_error_panic_hook = "0.1"
 ```
 
 #### CLI Application
+
 ```toml
 ratatui = "0.28"    # Terminal UI framework
 crossterm = "0.28"  # Cross-platform terminal control
@@ -1657,6 +1730,6 @@ anyhow = "1.0"      # Error handling
 - [Crossterm API](https://docs.rs/crossterm/)
 - [Serde Guide](https://serde.rs/)
 
----
+______________________________________________________________________
 
 **End of Specification**

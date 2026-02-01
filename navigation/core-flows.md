@@ -16,28 +16,37 @@ This document defines the user interaction flows for keyboard navigation and sho
 **Flow:**
 
 1. Player presses 'r' key
-  - Level restarts instantly
-  - Snake returns to starting position
-  - Move counter resets to 0
-  - Food respawns in original positions
-  - No visual feedback or confirmation
+
+- Level restarts instantly
+- Snake returns to starting position
+- Move counter resets to 0
+- Food respawns in original positions
+- No visual feedback or confirmation
+
 2. Player presses 'q' key
-  - Game loads level 1 instantly
-  - All level state resets
-  - No visual feedback or confirmation
+
+- Game loads level 1 instantly
+- All level state resets
+- No visual feedback or confirmation
+
 3. Player presses Escape key
-  - No action taken
-  - Gameplay continues normally
+
+- No action taken
+- Gameplay continues normally
+
 4. Player continues using WASD/Arrow keys for directional movement
-  - Existing movement behavior unchanged
-  - 'r', 'q', and Escape do not interfere with gameplay controls
+
+- Existing movement behavior unchanged
+- 'r', 'q', and Escape do not interfere with gameplay controls
+
 5. Player presses modifier key combinations (Ctrl+R, Alt+Q, etc.)
-  - Ignored by game - browser handles these normally
-  - Allows Ctrl+R to refresh page, etc.
+
+- Ignored by game - browser handles these normally
+- Allows Ctrl+R to refresh page, etc.
 
 **Exit:** Player continues gameplay with the restarted/reloaded level
 
----
+______________________________________________________________________
 
 ## Flow 2: GameOver Modal Interaction
 
@@ -54,24 +63,31 @@ This document defines the user interaction flows for keyboard navigation and sho
 **Flow:**
 
 1. **Any key restart** (most common path)
-  - Player presses any key: WASD, Arrow keys, Space, Enter, Tab, letters, numbers, etc.
-  - **Exceptions:** 'q' and Escape keys have special behavior (see step 2)
-  - Level restarts instantly
-  - Modal disappears
-  - Gameplay resumes from level start
+
+- Player presses any key: WASD, Arrow keys, Space, Enter, Tab, letters, numbers, etc.
+- **Exceptions:** 'q' and Escape keys have special behavior (see step 2)
+- Level restarts instantly
+- Modal disappears
+- Gameplay resumes from level start
+
 2. **Return to Level 1**
-  - Player presses 'q' key OR Escape key
-  - Game loads level 1 instantly
-  - Modal disappears
-  - Gameplay begins at level 1
+
+- Player presses 'q' key OR Escape key
+- Game loads level 1 instantly
+- Modal disappears
+- Gameplay begins at level 1
+
 3. **Mouse interaction** (alternative path)
-  - Player can still click buttons with mouse
-  - "Restart Level" button → restarts current level
-  - "Back to Level 1" button → loads level 1
+
+- Player can still click buttons with mouse
+- "Restart Level" button → restarts current level
+- "Back to Level 1" button → loads level 1
+
 4. **Modifier key combinations ignored**
-  - Player presses Ctrl+R, Alt+Q, Shift+Space, etc.
-  - Game ignores these - browser handles them normally
-  - Allows browser shortcuts to work (Ctrl+R refreshes page)
+
+- Player presses Ctrl+R, Alt+Q, Shift+Space, etc.
+- Game ignores these - browser handles them normally
+- Allows browser shortcuts to work (Ctrl+R refreshes page)
 
 **Key Behaviors:**
 
@@ -113,7 +129,7 @@ sequenceDiagram
     end
 ```
 
----
+______________________________________________________________________
 
 ## Flow 3: GameComplete Modal Interaction
 
@@ -131,23 +147,32 @@ sequenceDiagram
 **Flow:**
 
 1. Player presses 'r' key
-  - Game loads level 1 instantly
-  - Modal disappears
-  - Gameplay begins at level 1
+
+- Game loads level 1 instantly
+- Modal disappears
+- Gameplay begins at level 1
+
 2. Player presses 'q' key
-  - Game loads level 1 instantly (same as 'r')
-  - Modal disappears
-  - Gameplay begins at level 1
+
+- Game loads level 1 instantly (same as 'r')
+- Modal disappears
+- Gameplay begins at level 1
+
 3. Player presses Escape key
-  - Game loads level 1 instantly (same as 'r' and 'q')
-  - Modal disappears
-  - Gameplay begins at level 1
+
+- Game loads level 1 instantly (same as 'r' and 'q')
+- Modal disappears
+- Gameplay begins at level 1
+
 4. Player presses any other key
-  - No action taken
-  - Modal remains visible
-  - Only 'r', 'q', and Escape are active shortcuts
+
+- No action taken
+- Modal remains visible
+- Only 'r', 'q', and Escape are active shortcuts
+
 5. Player presses modifier key combinations (Ctrl+R, Alt+Q, etc.)
-  - Ignored by game - browser handles these normally
+
+- Ignored by game - browser handles these normally
 
 **Key Behaviors:**
 
@@ -159,34 +184,31 @@ sequenceDiagram
 
 **Exit:** Player returns to active gameplay at level 1
 
----
+______________________________________________________________________
 
 ## Interaction Summary Table
 
-
-| Context           | Key                 | Action                    | Visual Feedback |
+| Context | Key | Action | Visual Feedback |
 | ----------------- | ------------------- | ------------------------- | --------------- |
-| Active Gameplay   | 'r'                 | Restart current level     | None (instant)  |
-| Active Gameplay   | 'q'                 | Go to level 1             | None (instant)  |
-| Active Gameplay   | Escape              | No action                 | None            |
-| Active Gameplay   | WASD/Arrows         | Directional movement      | Snake moves     |
-| Active Gameplay   | Ctrl/Alt/Shift+Key  | Ignored (browser handles) | None            |
-| GameOverModal     | 'q' or Escape       | Go to level 1             | None (instant)  |
-| GameOverModal     | Any other key       | Restart current level     | None (instant)  |
-| GameOverModal     | Ctrl/Alt/Shift+Key  | Ignored (browser handles) | None            |
-| GameOverModal     | Mouse click         | Execute button action     | None (instant)  |
-| GameCompleteModal | 'r', 'q', or Escape | Go to level 1             | None (instant)  |
-| GameCompleteModal | Ctrl/Alt/Shift+Key  | Ignored (browser handles) | None            |
-| GameCompleteModal | Other keys          | No action                 | None            |
+| Active Gameplay | 'r' | Restart current level | None (instant) |
+| Active Gameplay | 'q' | Go to level 1 | None (instant) |
+| Active Gameplay | Escape | No action | None |
+| Active Gameplay | WASD/Arrows | Directional movement | Snake moves |
+| Active Gameplay | Ctrl/Alt/Shift+Key | Ignored (browser handles) | None |
+| GameOverModal | 'q' or Escape | Go to level 1 | None (instant) |
+| GameOverModal | Any other key | Restart current level | None (instant) |
+| GameOverModal | Ctrl/Alt/Shift+Key | Ignored (browser handles) | None |
+| GameOverModal | Mouse click | Execute button action | None (instant) |
+| GameCompleteModal | 'r', 'q', or Escape | Go to level 1 | None (instant) |
+| GameCompleteModal | Ctrl/Alt/Shift+Key | Ignored (browser handles) | None |
+| GameCompleteModal | Other keys | No action | None |
 
-
----
+______________________________________________________________________
 
 ## Design Principles
 
 1. **Zero Friction:** All keyboard shortcuts execute instantly without confirmation or visual feedback
-2. **Flow Preservation:** Players never need to switch from keyboard to mouse during gameplay sessions
-3. **Consistent Shortcuts:** 'r' and 'q' work the same way across all game states
-4. **Any-Key Optimization:** GameOverModal prioritizes the fastest possible restart (any key)
-5. **Mouse Compatibility:** Buttons remain functional for players who prefer mouse interaction
-
+1. **Flow Preservation:** Players never need to switch from keyboard to mouse during gameplay sessions
+1. **Consistent Shortcuts:** 'r' and 'q' work the same way across all game states
+1. **Any-Key Optimization:** GameOverModal prioritizes the fastest possible restart (any key)
+1. **Mouse Compatibility:** Buttons remain functional for players who prefer mouse interaction

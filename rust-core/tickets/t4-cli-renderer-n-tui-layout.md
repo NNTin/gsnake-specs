@@ -25,8 +25,8 @@ Create the visual interface for the native gSnake CLI using the `ratatui` librar
 
 ## Key Deliverables
 
-1.  **TUI Modules:** `gsnake-cli/src/ui.rs` or equivalent for rendering logic.
-2.  **Visual Components:** Grid, status bar, and overlay widgets.
+1. **TUI Modules:** `gsnake-cli/src/ui.rs` or equivalent for rendering logic.
+1. **Visual Components:** Grid, status bar, and overlay widgets.
 
 ## Acceptance Criteria
 

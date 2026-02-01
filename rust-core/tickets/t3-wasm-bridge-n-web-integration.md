@@ -24,8 +24,8 @@ Expose the Rust game engine to the web frontend via WebAssembly and replace the 
 
 ## Key Deliverables
 
-1.  **WASM Bridge:** `gsnake-wasm/src/lib.rs` with JS bindings.
-2.  **Frontend Integration:** Updated `App.svelte` and `stores.ts` using the WASM engine.
+1. **WASM Bridge:** `gsnake-wasm/src/lib.rs` with JS bindings.
+1. **Frontend Integration:** Updated `App.svelte` and `stores.ts` using the WASM engine.
 
 ## Acceptance Criteria
 

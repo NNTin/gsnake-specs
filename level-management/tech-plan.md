@@ -76,7 +76,7 @@ All changes maintain backward compatibility with existing gsnake-web functionali
 - Contract interface extensions are additive (new fields, no breaking changes)
 - Existing level JSON files work without difficulty field (optional)
 
----
+______________________________________________________________________
 
 ## Data Model
 
@@ -175,7 +175,7 @@ Completion state stored as JSON array in localStorage:
 
 **Rationale**: Simple array structure is easy to query and update. Level IDs are unique within a level set.
 
----
+______________________________________________________________________
 
 ## Component Architecture
 
@@ -333,11 +333,11 @@ async init(levels: LevelDefinition[] | null = null, startLevel: number = 1)
 **Integration Flow:**
 
 1. Parse URL parameters for `levelsUrl`
-2. If present, fetch levels.json from URL
-3. On fetch failure: display error modal, fallback to default embedded levels
-4. Pass custom or default levels to WasmGameEngine.init()
-5. Render level grid button in UI
-6. On level complete, mark in localStorage
+1. If present, fetch levels.json from URL
+1. On fetch failure: display error modal, fallback to default embedded levels
+1. Pass custom or default levels to WasmGameEngine.init()
+1. Render level grid button in UI
+1. On level complete, mark in localStorage
 
 **Error Handling:**
 
@@ -382,7 +382,7 @@ async init(levels: LevelDefinition[] | null = null, startLevel: number = 1)
 
 **Type**: JavaScript/WASM boundary
 
-**Interface**: 
+**Interface**:
 
 - `WasmGameEngine.init(levels: LevelDefinition[], startLevel: number)`
 - `WasmGameEngine.processMove(direction: Direction)`
@@ -394,14 +394,14 @@ async init(levels: LevelDefinition[] | null = null, startLevel: number = 1)
 
 **Type**: Browser API
 
-**Interface**: 
+**Interface**:
 
 - `localStorage.getItem("gsnake_completed_levels"): string | null`
 - `localStorage.setItem("gsnake_completed_levels", value: string)`
 
 **Data Flow**: Web reads completion on init, writes on level complete, queries for UI display
 
----
+______________________________________________________________________
 
 ## Architecture Diagram
 
@@ -461,4 +461,3 @@ graph TD
     CoreLib -->|contains| GameEngine
     CoreLib -->|contains| Models
 ```
-

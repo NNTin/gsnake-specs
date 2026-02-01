@@ -4,18 +4,16 @@ This spec defines the gameplay flows and interactions for the extended game obje
 
 ## Visual Design Language
 
-
-| Object Type       | Color       | Visual Pattern   | Platform Behavior          |
+| Object Type | Color | Visual Pattern | Platform Behavior |
 | ----------------- | ----------- | ---------------- | -------------------------- |
-| Floating Food     | Orange      | Solid fill       | Acts as platform           |
-| Falling Food      | Yellow      | Solid fill       | Platform only when settled |
-| Stone             | Brown       | Solid fill       | Acts as platform           |
-| Spike             | Red         | Solid fill       | No platform (deadly)       |
-| Solid Exit        | Green       | Filled pattern   | Acts as platform           |
-| Fall-Through Exit | Light Green | Hole/gap pattern | No platform                |
-| Obstacle          | Dark Gray   | Solid fill       | Acts as platform           |
-| Regular Food      | Red/Orange  | Solid fill       | Acts as platform           |
-
+| Floating Food | Orange | Solid fill | Acts as platform |
+| Falling Food | Yellow | Solid fill | Platform only when settled |
+| Stone | Brown | Solid fill | Acts as platform |
+| Spike | Red | Solid fill | No platform (deadly) |
+| Solid Exit | Green | Filled pattern | Acts as platform |
+| Fall-Through Exit | Light Green | Hole/gap pattern | No platform |
+| Obstacle | Dark Gray | Solid fill | Acts as platform |
+| Regular Food | Red/Orange | Solid fill | Acts as platform |
 
 ## Flow 1: Core Gameplay Loop
 
@@ -26,25 +24,31 @@ This spec defines the gameplay flows and interactions for the extended game obje
 **Flow:**
 
 1. Player presses arrow key (North/South/East/West)
-2. Game validates move (not opposite direction, not blocked push)
-3. Snake moves one cell in the chosen direction
-4. Game checks if snake ate food (any type - regular, floating, or falling):
-  - If yes: snake grows, food disappears, food counter increments
-  - If no: snake tail shrinks (maintains length)
+1. Game validates move (not opposite direction, not blocked push)
+1. Snake moves one cell in the chosen direction
+1. Game checks if snake ate food (any type - regular, floating, or falling):
+
+- If yes: snake grows, food disappears, food counter increments
+- If no: snake tail shrinks (maintains length)
+
 5. Snake falls due to gravity until hitting solid object
-6. All falling objects (stones, falling food) fall until hitting solid objects
-  - Falling food that was resting on snake now falls (snake moved away)
-  - Stones fall if support was removed
+1. All falling objects (stones, falling food) fall until hitting solid objects
+
+- Falling food that was resting on snake now falls (snake moved away)
+- Stones fall if support was removed
+
 7. Game checks collisions (in priority order):
-  - **Death checks (highest priority):**
-    - Spike contact → Game Over
-    - Obstacle/wall contact → Game Over
-    - Self-collision → Game Over
-  - **Success checks:**
-    - Exit reached AND food counter >= totalFood → Level Complete
+
+- **Death checks (highest priority):**
+  - Spike contact → Game Over
+  - Obstacle/wall contact → Game Over
+  - Self-collision → Game Over
+- **Success checks:**
+  - Exit reached AND food counter >= totalFood → Level Complete
+
 8. Grid updates with new positions
-9. Player sees updated game state
-10. Loop continues until game over or level complete
+1. Player sees updated game state
+1. Loop continues until game over or level complete
 
 **Key Behaviors:**
 
@@ -78,10 +82,10 @@ sequenceDiagram
 **Flow:**
 
 1. Snake head enters cell with floating food (orange)
-2. Food disappears from grid
-3. Snake grows by one segment
-4. Food counter increments (counts toward level's `totalFood` requirement)
-5. Floating food does not fall or move (remains in original position until collected)
+1. Food disappears from grid
+1. Snake grows by one segment
+1. Food counter increments (counts toward level's `totalFood` requirement)
+1. Floating food does not fall or move (remains in original position until collected)
 
 **Visual Feedback:**
 
@@ -103,21 +107,26 @@ sequenceDiagram
 **Flow:**
 
 1. **Initial State:** Falling food (yellow) sits on a solid object (settled state)
-2. **Scenario A - Direct Collection:**
-  - Snake head enters cell with falling food
-  - Food disappears, snake grows
-  - Food counter increments (counts toward level's `totalFood` requirement)
+1. **Scenario A - Direct Collection:**
+
+- Snake head enters cell with falling food
+- Food disappears, snake grows
+- Food counter increments (counts toward level's `totalFood` requirement)
+
 3. **Scenario B - Support Removed:**
-  - Object below falling food is removed (snake eats it, stone pushed away)
-  - Falling food becomes unsettled and falls until hitting next solid object
-  - If snake is below, food stops above snake (snake acts as platform)
-  - Player can then collect it by moving into it
+
+- Object below falling food is removed (snake eats it, stone pushed away)
+- Falling food becomes unsettled and falls until hitting next solid object
+- If snake is below, food stops above snake (snake acts as platform)
+- Player can then collect it by moving into it
+
 4. **Scenario C - Resting on Snake:**
-  - Falling food rests on any snake segment (head or body)
-  - Food is in settled state (acts as platform for objects above it)
-  - When snake moves away, space below food becomes empty
-  - Food becomes unsettled and falls during step 6 of Flow 1
-  - Food continues falling until hitting next solid object
+
+- Falling food rests on any snake segment (head or body)
+- Food is in settled state (acts as platform for objects above it)
+- When snake moves away, space below food becomes empty
+- Food becomes unsettled and falls during step 6 of Flow 1
+- Food continues falling until hitting next solid object
 
 **Visual Feedback:**
 
@@ -141,12 +150,14 @@ sequenceDiagram
 **Flow:**
 
 1. Snake moves toward stone (brown cell)
-2. Game checks if space beyond stone is available:
-  - **If available:** Stone moves one cell in push direction, snake enters stone's previous cell
-  - **If blocked:** Stone wiggles/shakes briefly, snake doesn't move, move is rejected
+1. Game checks if space beyond stone is available:
+
+- **If available:** Stone moves one cell in push direction, snake enters stone's previous cell
+- **If blocked:** Stone wiggles/shakes briefly, snake doesn't move, move is rejected
+
 3. After successful push, stone falls due to gravity until hitting solid object
-4. Snake also falls due to gravity
-5. Grid updates with new positions
+1. Snake also falls due to gravity
+1. Grid updates with new positions
 
 **Visual Feedback:**
 
@@ -178,13 +189,15 @@ sequenceDiagram
 **Flow:**
 
 1. Snake moves toward first stone in a row
-2. Game checks entire row of stones in push direction
-3. Game checks if space beyond last stone is available:
-  - **If available:** All stones in row move one cell in push direction, snake enters first stone's cell
-  - **If blocked:** First stone wiggles/shakes, snake doesn't move, move is rejected
+1. Game checks entire row of stones in push direction
+1. Game checks if space beyond last stone is available:
+
+- **If available:** All stones in row move one cell in push direction, snake enters first stone's cell
+- **If blocked:** First stone wiggles/shakes, snake doesn't move, move is rejected
+
 4. After successful push, all stones fall due to gravity independently
-5. Snake falls due to gravity
-6. Grid updates with new positions
+1. Snake falls due to gravity
+1. Grid updates with new positions
 
 **Visual Feedback:**
 
@@ -218,18 +231,18 @@ Then:   (All stones fall independently)
 **Scenario A - Vertical Push Attempt:**
 
 1. Snake attempts to move vertically (North/South) into stone
-2. Move is rejected (treated as blocked)
-3. Stone does not wiggle (no push attempt feedback)
-4. Snake doesn't move
-5. Grid remains unchanged
+1. Move is rejected (treated as blocked)
+1. Stone does not wiggle (no push attempt feedback)
+1. Snake doesn't move
+1. Grid remains unchanged
 
 **Scenario B - Horizontal Push into Vertical Stack:**
 
 1. Snake moves horizontally (East/West) into stone that's part of a vertical stack
-2. Only the stone at snake's level is pushed
-3. Stones above/below in the vertical stack remain in place
-4. After push, the moved stone falls independently
-5. Stones above may fall if they lost support
+1. Only the stone at snake's level is pushed
+1. Stones above/below in the vertical stack remain in place
+1. After push, the moved stone falls independently
+1. Stones above may fall if they lost support
 
 **Key Behaviors:**
 
@@ -247,17 +260,23 @@ Then:   (All stones fall independently)
 **Flow:**
 
 1. **Scenario A - Horizontal Contact:**
-  - Snake moves horizontally into spike (red cell)
-  - Game Over immediately
+
+- Snake moves horizontally into spike (red cell)
+- Game Over immediately
+
 2. **Scenario B - Falling Onto Spike:**
-  - Snake falls due to gravity
-  - Snake lands on spike
-  - Game Over immediately
+
+- Snake falls due to gravity
+- Snake lands on spike
+- Game Over immediately
+
 3. **Scenario C - Moving Up Through Spike:**
-  - Snake moves upward into spike
-  - Game Over immediately
+
+- Snake moves upward into spike
+- Game Over immediately
+
 4. Game Over modal appears
-5. Player can restart level or return to level 1
+1. Player can restart level or return to level 1
 
 **Visual Feedback:**
 
@@ -282,14 +301,18 @@ Then:   (All stones fall independently)
 **Flow:**
 
 1. Snake moves toward solid exit (green, filled pattern)
-2. **If food counter < totalFood:**
-  - Exit acts as platform (snake stands on it)
-  - Level doesn't complete
-  - Snake can move away from exit
+1. **If food counter < totalFood:**
+
+- Exit acts as platform (snake stands on it)
+- Level doesn't complete
+- Snake can move away from exit
+
 3. **If food counter >= totalFood:**
-  - Snake enters exit cell
-  - Level Complete status triggered
-  - Level Complete modal appears
+
+- Snake enters exit cell
+- Level Complete status triggered
+- Level Complete modal appears
+
 4. Player proceeds to next level or returns to menu
 
 **Visual Feedback:**
@@ -307,14 +330,18 @@ Then:   (All stones fall independently)
 **Flow:**
 
 1. Snake moves toward fall-through exit (light green, hole/gap pattern)
-2. **If food counter < totalFood:**
-  - Snake falls through exit (no platform behavior)
-  - Snake continues falling until hitting solid object below
-  - Level doesn't complete
+1. **If food counter < totalFood:**
+
+- Snake falls through exit (no platform behavior)
+- Snake continues falling until hitting solid object below
+- Level doesn't complete
+
 3. **If food counter >= totalFood:**
-  - Snake enters exit cell
-  - Level Complete status triggered immediately
-  - Level Complete modal appears
+
+- Snake enters exit cell
+- Level Complete status triggered immediately
+- Level Complete modal appears
+
 4. Player proceeds to next level or returns to menu
 
 **Visual Feedback:**
@@ -337,16 +364,22 @@ Then:   (All stones fall independently)
 **Flow:**
 
 1. Object (stone or falling food) loses support
-2. Object falls one cell at a time until hitting solid object
-3. **Collision with Snake:**
-  - Falling object stops above any snake segment (head or body)
-  - Object rests on snake in settled state
-  - Snake can move away, causing object to become unsettled and fall further
+1. Object falls one cell at a time until hitting solid object
+1. **Collision with Snake:**
+
+- Falling object stops above any snake segment (head or body)
+- Object rests on snake in settled state
+- Snake can move away, causing object to become unsettled and fall further
+
 4. **Collision with Other Objects:**
-  - Falling object stops above solid objects (obstacles, stones, floating food, settled falling food)
-  - Multiple objects can stack vertically
+
+- Falling object stops above solid objects (obstacles, stones, floating food, settled falling food)
+- Multiple objects can stack vertically
+
 5. **Collision with Spike:**
-  - Falling object stops above spike (spike acts as floor for objects, not snake)
+
+- Falling object stops above spike (spike acts as floor for objects, not snake)
+
 6. Grid updates with final positions
 
 **Visual Feedback:**
@@ -364,16 +397,20 @@ Then:   (All stones fall independently)
 **Flow:**
 
 1. Designer opens level JSON file
-2. Designer adds new object arrays:
-  - `floatingFood`: Array of positions for floating food
-  - `fallingFood`: Array of positions for falling food
-  - `stones`: Array of positions for stones
-  - `spikes`: Array of positions for spikes
+1. Designer adds new object arrays:
+
+- `floatingFood`: Array of positions for floating food
+- `fallingFood`: Array of positions for falling food
+- `stones`: Array of positions for stones
+- `spikes`: Array of positions for spikes
+
 3. Designer sets exit property:
-  - `exitIsSolid`: `true` for solid exit (default), `false` for fall-through
+
+- `exitIsSolid`: `true` for solid exit (default), `false` for fall-through
+
 4. Designer saves level file
-5. Game loads level with new objects
-6. Objects appear in grid with correct colors and behaviors
+1. Game loads level with new objects
+1. Objects appear in grid with correct colors and behaviors
 
 **Level JSON Structure:**
 
@@ -417,9 +454,9 @@ Then:   (All stones fall independently)
 Players learn object behaviors by:
 
 1. **Visual cues:** Distinct colors indicate different object types
-2. **Experimentation:** Trying to interact with objects reveals their behavior
-3. **Trial and error:** Game Over teaches what's deadly, success teaches what works
-4. **Pattern recognition:** Similar colors/patterns suggest similar behaviors
+1. **Experimentation:** Trying to interact with objects reveals their behavior
+1. **Trial and error:** Game Over teaches what's deadly, success teaches what works
+1. **Pattern recognition:** Similar colors/patterns suggest similar behaviors
 
 **No explicit tutorials or instructions** - the game teaches through play.
 
@@ -461,4 +498,3 @@ Players learn object behaviors by:
 - Solid exits useful for platform-based puzzles
 - Fall-through exits useful for vertical drop puzzles
 - Exit property enables new level design patterns
-

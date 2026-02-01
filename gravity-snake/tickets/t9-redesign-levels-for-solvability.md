@@ -23,10 +23,10 @@ Redesign levels 1-5 to ensure they are all solvable and provide good difficulty 
 **For Each Level:**
 
 1. Playtest to verify solvability
-2. Identify unreachable areas or impossible scenarios
-3. Redesign obstacle/food placement to fix issues
-4. Consider new mechanics (food as platforms)
-5. Verify difficulty progression
+1. Identify unreachable areas or impossible scenarios
+1. Redesign obstacle/food placement to fix issues
+1. Consider new mechanics (food as platforms)
+1. Verify difficulty progression
 
 **Level Design Principles:**
 
@@ -87,4 +87,3 @@ Redesign levels 1-5 to ensure they are all solvable and provide good difficulty 
 
 - `ticket:T7` - Should be done after exit condition change
 - `ticket:T8` - Should be done after food platform feature
-

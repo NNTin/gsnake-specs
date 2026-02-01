@@ -28,11 +28,11 @@ The gSnake project currently manages all game levels in a single monolithic `lev
 ### Current Pain Points
 
 1. **Monolithic Level Storage**: All 12 levels are stored in file:gsnake-core/engine/core/data/levels.json with no organization by difficulty or metadata tracking
-2. **No Level Verification**: There's no automated way to verify that levels are solvable with provided solutions, leading to potential broken levels in production
-3. **Limited CLI Capabilities**: The CLI in file:gsnake-core/engine/bindings/cli/src/main.rs loads all levels at once and cycles through them sequentially, with no way to select or test individual levels
-4. **No Visual Documentation**: Levels exist only as JSON data with no visual representations for documentation or preview purposes
-5. **No Level Metadata**: No tracking of level authorship, difficulty, tags, or solvability status
-6. **Web Interface Limitations**: The contract interface (file:e2e/contract.spec.ts) supports level selection via `?level=2` query parameter but cannot load custom level sets
+1. **No Level Verification**: There's no automated way to verify that levels are solvable with provided solutions, leading to potential broken levels in production
+1. **Limited CLI Capabilities**: The CLI in file:gsnake-core/engine/bindings/cli/src/main.rs loads all levels at once and cycles through them sequentially, with no way to select or test individual levels
+1. **No Visual Documentation**: Levels exist only as JSON data with no visual representations for documentation or preview purposes
+1. **No Level Metadata**: No tracking of level authorship, difficulty, tags, or solvability status
+1. **Web Interface Limitations**: The contract interface (file:e2e/contract.spec.ts) supports level selection via `?level=2` query parameter but cannot load custom level sets
 
 ### What Success Looks Like
 
@@ -85,4 +85,3 @@ description = "Learn basic movement"
 - Support loading custom levels.json via URL parameter
 - Support selecting specific level by ID
 - Track and report level completion status
-

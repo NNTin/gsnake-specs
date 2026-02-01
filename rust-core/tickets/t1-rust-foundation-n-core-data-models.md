@@ -24,9 +24,9 @@ Establish the Rust project foundation and define the core data structures that w
 
 ## Key Deliverables
 
-1.  **Workspace Configuration:** `Cargo.toml` at the root managing the workspace.
-2.  **Core Models:** `gsnake-core/src/lib.rs` containing all shared data structures.
-3.  **Serialization:** `Cargo.toml` in `gsnake-core` with `serde` features enabled.
+1. **Workspace Configuration:** `Cargo.toml` at the root managing the workspace.
+1. **Core Models:** `gsnake-core/src/lib.rs` containing all shared data structures.
+1. **Serialization:** `Cargo.toml` in `gsnake-core` with `serde` features enabled.
 
 ## Acceptance Criteria
 

@@ -1,6 +1,7 @@
 # Tech Plan: wasm-bindgen + ts-rs Integration
 
 ## Architectural Approach
+
 - Split domain modeling from execution: `gsnake-core/engine/core` owns Rust domain logic and ts-rs derives; `gsnake-core/engine/bindings/wasm` remains a thin wasm-bindgen execution layer with strict typed serialization.
 - Authoritative rendering from Rust: UI consumes `Frame.grid` produced by core; Svelte stops recomputing grid and avoids desync between food/obstacles and runtime state.
 - Shared type safety: ts-rs generates `gsnake-web/types/models.ts`, and TS imports these types directly; avoid hand-written duplicates for domain models, enums, and payloads.
@@ -9,6 +10,7 @@
 - Common demeanor (contract posture): stable shapes, typed error payloads, and predictable event order; UI trusts the core as source of truth and never re-derives gameplay state.
 
 ## Data Model
+
 - `LevelDefinition` (static): `id`, `name`, `grid_size`, `snake` (initial segments), `obstacles`, `food`, `exit`, `snake_direction` (required). Serialized via serde; ts-rs derives for TS usage.
 - `LevelState` (runtime): mutable entities derived from `LevelDefinition` at load time: `snake`, `food`, `moves`, `status`, etc. Not exposed directly to UI; used by engine to compute `Frame`.
 - `Frame` (authoritative render payload): `grid: Vec<Vec<CellType>>` and `state: GameState`. Serialized via serde; ts-rs derives. `snake` is removed or treated as debug-only and not relied on by the UI.
@@ -29,7 +31,8 @@ erDiagram
 ```
 
 ## Component Architecture
-- Interface/Contract (UI <-> Core via wasm-bindgen):
+
+- Interface/Contract (UI \<-> Core via wasm-bindgen):
   - Input: `LevelDefinition` and `Direction` as strict serialized types.
   - Output: `Frame` payloads; `GameState` is read from `Frame.state`.
   - Required order: init -> level load -> initial frame emission -> input loop; every accepted input yields a new `Frame`.

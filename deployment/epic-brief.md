@@ -15,9 +15,9 @@ This Epic establishes a public deployment pipeline for gSnake to GitHub Pages, m
 gSnake currently exists only as source code in a GitHub repository at `github.com/nntin/gSnake`. To play the game, users must:
 
 1. Clone the repository
-2. Install Node.js and dependencies
-3. Run a local development server
-4. Navigate to localhost in their browser
+1. Install Node.js and dependencies
+1. Run a local development server
+1. Navigate to localhost in their browser
 
 This technical barrier prevents non-developers from accessing and enjoying the game.
 
@@ -67,4 +67,3 @@ The following features are explicitly excluded from this Epic to maintain focuse
 - **Version Comparison**: No UI for comparing differences between versions
 - **Access Control**: All deployments are public (no authentication or private versions)
 - **Performance Monitoring**: No performance metrics or monitoring for deployed versions
-

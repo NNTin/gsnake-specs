@@ -5,11 +5,13 @@
 The architecture supports two dependency resolution modes:
 
 **🏠 Root Repository Mode (Local Paths)**
+
 - Detected when `../.git` exists
 - Uses local path dependencies via auto-detection
 - Enables rapid development without network access
 
 **🌐 Standalone Mode (Git Dependencies)**
+
 - Used when submodule is cloned independently
 - Uses git branch dependencies (target: `main` branch)
 - Enables independent builds and CI
@@ -78,12 +80,14 @@ The gSnake project uses a **dual-mode dependency resolution system** to support 
 When submodules are built independently (outside the root repository), they resolve dependencies without local sibling repos.
 
 #### Rust (Cargo.toml)
+
 ```toml
 [dependencies]
 gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", package = "gsnake-core" }
 ```
 
 #### JavaScript/TypeScript (package.json)
+
 ```json
 {
   "dependencies": {
@@ -91,11 +95,13 @@ gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", packag
   }
 }
 ```
+
 In standalone mode, the preinstall script downloads prebuilt WASM artifacts from the `main` branch into `vendor/gsnake-wasm` and points the dependency there.
 
 ### Branch Strategy
 
 All git dependencies target the **`main` branch**. This ensures:
+
 - Submodules always use the latest stable version
 - Consistent behavior across all standalone builds
 - Simplified dependency management (no need to update commit SHAs or tags)
@@ -105,16 +111,19 @@ All git dependencies target the **`main` branch**. This ensures:
 When submodules are built within the root repository, they automatically detect the local environment and override git dependencies with local path dependencies.
 
 **Detection Logic:**
+
 - Check if `../.git` exists (indicates root repository)
 - Check if sibling submodules exist (e.g., `../gsnake-core/.git`)
 - If both conditions are met: use local paths
 - Otherwise: use git dependencies (Rust) and download prebuilt WASM (JavaScript)
 
 **Rust Implementation:**
+
 - Build scripts create `.cargo/config.toml` with `[patch]` section
 - Patches redirect git dependencies to local paths
 
 **JavaScript Implementation:**
+
 - Preinstall scripts dynamically modify `package.json`
 - Replace git URLs with `file:` paths before installation
 
@@ -127,6 +136,7 @@ When submodules are built within the root repository, they automatically detect 
 ### Examples
 
 #### Rust Git Dependency (gsnake-levels/Cargo.toml)
+
 ```toml
 [package]
 name = "gsnake-levels"
@@ -137,6 +147,7 @@ gsnake-core = { git = "https://github.com/nntin/gsnake", branch = "main", packag
 ```
 
 #### JavaScript Standalone Dependency (gsnake-web/package.json)
+
 ```json
 {
   "name": "gsnake-web",
@@ -156,10 +167,11 @@ When working in the root repository with submodules checked out, the build syste
 Each submodule's build scripts check for the presence of the root repository:
 
 **Detection Criteria:**
+
 1. `../.git` exists (indicates parent directory is a git repository)
-2. `../gsnake-core` exists (indicates gsnake-core is present as sibling)
-3. If both are true → **Root repository mode** (use local paths)
-4. Otherwise → **Standalone mode** (use git dependencies for Rust; download prebuilt WASM for JS)
+1. `../gsnake-core` exists (indicates gsnake-core is present as sibling)
+1. If both are true → **Root repository mode** (use local paths)
+1. Otherwise → **Standalone mode** (use git dependencies for Rust; download prebuilt WASM for JS)
 
 **Detection Script:**
 
@@ -187,6 +199,7 @@ fi
 **Mechanism:** Build script generates `.cargo/config.toml` with `[patch]` section
 
 **Implementation (build.rs):**
+
 ```rust
 use std::path::Path;
 
@@ -212,13 +225,15 @@ gsnake-core = { path = "../gsnake-core" }
 ```
 
 **How it works:**
+
 1. `build.rs` runs before compilation
-2. Detects root repository context
-3. Creates `.cargo/config.toml` with `[patch]` section
-4. Cargo automatically redirects git dependency to local path
-5. No changes to `Cargo.toml` required
+1. Detects root repository context
+1. Creates `.cargo/config.toml` with `[patch]` section
+1. Cargo automatically redirects git dependency to local path
+1. No changes to `Cargo.toml` required
 
 **Result:**
+
 ```bash
 # Root repo mode
 cd gsnake-levels
@@ -237,6 +252,7 @@ cargo build
 **Mechanism:** Preinstall script modifies `package.json` before dependency resolution and downloads prebuilt WASM when standalone
 
 **Implementation (scripts/detect-local-deps.js):**
+
 ```javascript
 const fs = require('fs');
 const path = require('path');
@@ -264,6 +280,7 @@ if (isRootRepo) {
 ```
 
 **Integration (package.json):**
+
 ```json
 {
   "scripts": {
@@ -273,13 +290,15 @@ if (isRootRepo) {
 ```
 
 **How it works:**
+
 1. `preinstall` hook runs before `npm install`
-2. Script detects root repository context
-3. Modifies `package.json` in-place
-4. npm then installs with updated dependency
-5. Next `npm install` re-runs detection (stateless)
+1. Script detects root repository context
+1. Modifies `package.json` in-place
+1. npm then installs with updated dependency
+1. Next `npm install` re-runs detection (stateless)
 
 **Result:**
+
 ```bash
 # Root repo mode
 cd gsnake-web
@@ -296,16 +315,17 @@ npm install
 ### Benefits
 
 1. **Fast Local Development:** No network access needed, instant dependency updates
-2. **Seamless Switching:** Same commands work in both modes (no special flags)
-3. **Consistent Behavior:** CI uses standalone mode, local dev uses root repo mode
-4. **Zero Configuration:** Developers don't need to manually configure paths
-5. **Safe Defaults:** Prebuilt WASM downloads work out-of-the-box for standalone builds
+1. **Seamless Switching:** Same commands work in both modes (no special flags)
+1. **Consistent Behavior:** CI uses standalone mode, local dev uses root repo mode
+1. **Zero Configuration:** Developers don't need to manually configure paths
+1. **Safe Defaults:** Prebuilt WASM downloads work out-of-the-box for standalone builds
 
 ### Verification
 
 **Check which mode is active:**
 
 **Rust:**
+
 ```bash
 cd gsnake-levels
 cargo tree | grep gsnake-core
@@ -314,6 +334,7 @@ cargo tree | grep gsnake-core
 ```
 
 **JavaScript:**
+
 ```bash
 cd gsnake-web
 npm ls gsnake-core
@@ -322,6 +343,7 @@ npm ls gsnake-core
 ```
 
 **Force standalone mode (for testing):**
+
 ```bash
 # Temporarily disable detection
 mv ../.git ../.git.disabled
@@ -333,6 +355,7 @@ mv ../.git.disabled ../.git
 ### Submodule-Specific Details
 
 For implementation details specific to each submodule, see:
+
 - **gsnake-levels** (Rust): [gsnake-levels/README.md](../../gsnake-levels/README.md) - Local Override Detection section
 - **gsnake-web** (JavaScript): [gsnake-web/README.md](../../gsnake-web/README.md) - Auto-Detection Behavior section
 - **gsnake-editor** (JavaScript): [gsnake-editor/README.md](../../gsnake-editor/README.md) - Standalone Build section
@@ -344,12 +367,14 @@ For implementation details specific to each submodule, see:
 **Symptom:** Build fails with error like `failed to load source for dependency` or `repository not found`.
 
 **Causes and Solutions:**
+
 - **Incorrect branch name**: Verify the branch name is `main` (not `master` or other)
 - **Repository access**: Ensure you have access to `https://github.com/nntin/gsnake`
 - **Network issues**: Check your internet connection and GitHub access
 - **Submodule not published**: Verify the dependency code exists in the main branch
 
 **Verification:**
+
 ```bash
 # Test repository access
 git ls-remote https://github.com/nntin/gsnake refs/heads/main
@@ -364,11 +389,13 @@ ls /tmp/test-repo/gsnake-core
 **Symptom:** Root repository build still uses git dependencies instead of local paths.
 
 **Causes and Solutions:**
+
 - **Detection script not running**: Verify preinstall/build scripts are executing
 - **Missing sibling directories**: Check that `../gsnake-core/.git` exists
 - **Cache issues**: Clear build caches and reinstall dependencies
 
 **Verification for Rust:**
+
 ```bash
 cd gsnake-levels
 # Check if .cargo/config.toml exists with [patch] section
@@ -377,6 +404,7 @@ cat .cargo/config.toml
 ```
 
 **Verification for JavaScript:**
+
 ```bash
 cd gsnake-web
 # Check package.json after npm install
@@ -389,6 +417,7 @@ cat package.json | grep gsnake-wasm
 **Symptom:** `wasm-pack build` fails or WASM target not found.
 
 **Causes and Solutions:**
+
 - **Missing Rust target**: Install the WASM target
   ```bash
   rustup target add wasm32-unknown-unknown
@@ -407,6 +436,7 @@ cat package.json | grep gsnake-wasm
 To test standalone builds while in the root repository (ignoring local overrides):
 
 **Rust (Cargo):**
+
 ```bash
 # Temporarily rename .git to disable detection
 mv ../.git ../.git.disabled
@@ -416,6 +446,7 @@ mv ../.git.disabled ../.git
 ```
 
 **JavaScript (npm):**
+
 ```bash
 # Set environment variable to skip detection
 FORCE_GIT_DEPS=1 npm install
@@ -431,6 +462,7 @@ mv ../.git.disabled ../.git
 **Check which mode is active:**
 
 **Rust:**
+
 ```bash
 cd gsnake-levels
 cargo tree | grep gsnake-core
@@ -439,6 +471,7 @@ cargo tree | grep gsnake-core
 ```
 
 **JavaScript:**
+
 ```bash
 cd gsnake-web
 npm ls gsnake-wasm
@@ -453,15 +486,18 @@ Each submodule can be cloned and built independently without requiring the root 
 ### Prerequisites
 
 **For Rust submodules (gsnake-core, gsnake-levels):**
+
 - Rust toolchain (stable)
 - Cargo package manager
 - For WASM builds: wasm32-unknown-unknown target and wasm-pack
 
 **For JavaScript submodules (gsnake-web, gsnake-editor):**
+
 - Node.js 18+ and npm
 - Network access to GitHub (for downloading prebuilt WASM in standalone mode)
 
 **For gsnake-specs:**
+
 - No build dependencies (pure Markdown documentation)
 
 ### Build Instructions by Submodule
@@ -581,16 +617,19 @@ find . -name "*.md" | wc -l
 ### Troubleshooting Standalone Builds
 
 **Problem: Git dependency fetch fails**
+
 - Check network connectivity
 - Verify branch name is `main` (not `master`)
 - Ensure repository access permissions
 
 **Problem: WASM artifacts not found (gsnake-web standalone)**
+
 - Verify main branch has prebuilt WASM in `gsnake-core/engine/bindings/wasm/pkg`
 - Check CI has run successfully on main branch
 - Prebuilt artifacts are committed to enable standalone builds
 
 **Problem: Test failures in standalone mode**
+
 - Ensure you're on the latest main branch: `git pull origin main`
 - Clear build caches: `cargo clean` or `rm -rf node_modules`
 - Reinstall dependencies: `cargo build` or `npm install`
@@ -604,16 +643,18 @@ The CI/CD system validates both standalone submodule builds and the integrated r
 Each submodule has its own independent CI workflow in `.github/workflows/ci.yml` that validates standalone builds.
 
 **Workflow Design Principles:**
+
 1. **Independence**: Each workflow runs without dependencies on other submodules
-2. **Compatibility**: All workflows use standard actions compatible with nektos/act
-3. **Git Dependencies**: Use git branch dependencies (not local paths)
-4. **Comprehensive**: Validate build, test, typecheck, and format
+1. **Compatibility**: All workflows use standard actions compatible with nektos/act
+1. **Git Dependencies**: Use git branch dependencies (not local paths)
+1. **Comprehensive**: Validate build, test, typecheck, and format
 
 #### gsnake-core CI
 
 **File:** `gsnake-core/.github/workflows/ci.yml`
 
 **Jobs:**
+
 - `build`: Compile Rust code with cargo
 - `test`: Run unit and integration tests
 - `wasm`: Validate WASM build with wasm-pack
@@ -621,6 +662,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
+
 - Caches cargo registry and build artifacts
 - Tests WASM target (wasm32-unknown-unknown)
 - Builds standalone (no sibling submodules)
@@ -630,12 +672,14 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **File:** `gsnake-levels/.github/workflows/ci.yml`
 
 **Jobs:**
+
 - `build`: Compile with git dependency on gsnake-core
 - `test`: Run tests with git dependency on gsnake-core
 
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
+
 - Automatically fetches gsnake-core from main branch
 - Validates standalone build without root repository
 - Tests local override detection mechanism (via build.rs)
@@ -645,6 +689,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **File:** `gsnake-web/.github/workflows/ci.yml`
 
 **Jobs:**
+
 - `build`: Build Svelte app with prebuilt WASM
 - `typecheck`: Validate TypeScript types
 - `test`: Run contract tests and unit tests (41 tests)
@@ -652,6 +697,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
+
 - Downloads prebuilt WASM from main branch into `vendor/gsnake-wasm`
 - Runs contract tests to validate Rust/TypeScript interface
 - Tests auto-detection mechanism (preinstall script)
@@ -661,6 +707,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **File:** `gsnake-editor/.github/workflows/ci.yml`
 
 **Jobs:**
+
 - `build`: Build Svelte level editor
 - `typecheck`: Validate TypeScript types
 - `test`: Run unit tests (integration tests skip if gsnake-web unavailable)
@@ -668,6 +715,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
+
 - Unit tests always pass (no external dependencies)
 - Integration tests gracefully skip when gsnake-web unreachable
 - Uses environment variable VITE_GSNAKE_WEB_URL for configuration
@@ -677,6 +725,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **File:** `gsnake-specs/.github/workflows/ci.yml`
 
 **Jobs:**
+
 - `markdown-lint`: Validate Markdown formatting
 - `link-check`: Check for broken links (internal focus)
 - `validate`: Verify repository structure (66 Markdown files, 11 directories)
@@ -684,6 +733,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Triggers:** Push to main, pull requests, manual dispatch
 
 **Key Features:**
+
 - No build dependencies (pure documentation)
 - Soft failures for external link checks (rate limits)
 - Structure validation ensures completeness
@@ -695,6 +745,7 @@ Each submodule has its own independent CI workflow in `.github/workflows/ci.yml`
 **Purpose:** Build and deploy the complete application with all submodules integrated
 
 **Key Differences from Submodule CI:**
+
 - Uses local paths (root repository mode)
 - Builds WASM from source (not prebuilt)
 - Deploys final artifacts to production
@@ -715,6 +766,7 @@ cd gsnake-levels && act -j test
 ```
 
 **Compatibility Features:**
+
 - Uses standard actions: actions/checkout@v4, actions/setup-node@v4, dtolnay/rust-toolchain@stable
 - Avoids GitHub-specific features that fail locally
 - Properly configured for submodule checkouts (path parameter)
@@ -722,6 +774,7 @@ cd gsnake-levels && act -j test
 ### Known Limitations
 
 **nektos/act:**
+
 - Requires Docker to be installed and running
 - Cache behavior differs from GitHub Actions
 - WASM build may be slow (wasm-pack installation)
@@ -736,26 +789,31 @@ cd gsnake-levels && act -j test
 **Previous challenges that are now resolved:**
 
 1. **✅ WEB cannot build standalone**
+
    - **Was:** Required ../gsnake-core WASM to be built locally
    - **Now:** Downloads prebuilt WASM artifacts into `vendor/gsnake-wasm`
    - **How:** Preinstall script switches between local paths and vendored downloads
 
-2. **✅ LEVELS cannot build standalone**
+1. **✅ LEVELS cannot build standalone**
+
    - **Was:** Required ../gsnake-core source code to be present
    - **Now:** Uses git branch dependency to fetch gsnake-core
    - **How:** Cargo.toml git dependency + build.rs patch mechanism
 
-3. **✅ EDITOR cannot build standalone**
+1. **✅ EDITOR cannot build standalone**
+
    - **Was:** Hardcoded references to ../gsnake-web
    - **Now:** Uses environment variable (VITE_GSNAKE_WEB_URL)
    - **How:** Configurable URL with default to localhost:3000
 
-4. **✅ CI workflows failing in standalone mode**
+1. **✅ CI workflows failing in standalone mode**
+
    - **Was:** Workflows assumed sibling submodules existed
    - **Now:** Each workflow validates true standalone builds
    - **How:** Git dependencies resolve without local filesystem
 
-5. **✅ No documentation for standalone builds**
+1. **✅ No documentation for standalone builds**
+
    - **Was:** Build instructions assumed root repository context
    - **Now:** Each submodule README documents standalone build
    - **How:** Comprehensive docs in each submodule + this architecture guide
@@ -763,6 +821,7 @@ cd gsnake-levels && act -j test
 ### Current Capabilities
 
 **All submodules can now:**
+
 - ✅ Be cloned and built independently
 - ✅ Use git branch dependencies to access other submodules
 - ✅ Auto-detect root repository and use local paths when available
@@ -770,6 +829,7 @@ cd gsnake-levels && act -j test
 - ✅ Be developed without requiring the full monorepo
 
 **Root repository still provides:**
+
 - Fast local development (no network access needed)
 - Integrated testing across all submodules
 - Unified deployment pipeline
@@ -778,18 +838,21 @@ cd gsnake-levels && act -j test
 ### Versioning Model
 
 **Root Repository:**
+
 - Uses semantic versioning (package.json)
 - Tags releases (e.g., v1.0.0, v1.1.0)
 - Submodule pointers track specific commits
 - Stable release artifacts
 
 **Submodules (Standalone Mode):**
+
 - Track main branch (no fixed versions)
 - Always use latest stable code
 - Git dependencies reference branch, not tags/commits
 - Rapid iteration and updates
 
 **Local Development (Root Repository Mode):**
+
 - Uses exact local code (whatever is checked out)
 - No version constraints (filesystem paths)
 - Immediate updates across submodules
@@ -807,12 +870,14 @@ The standalone submodules build feature is now **complete**. All acceptance crit
 - ✅ Compatible with nektos/act for local testing
 
 **Ongoing maintenance:**
+
 - Keep main branch stable (submodules depend on it)
 - Maintain prebuilt WASM artifacts in main branch
 - Update documentation as patterns evolve
 - Monitor CI for standalone build failures
 
 **Potential future enhancements:**
+
 - Publish submodules to crates.io / npm registry
 - Version pinning for stable dependencies
 - Automated release notes generation

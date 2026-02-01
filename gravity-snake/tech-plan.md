@@ -2,7 +2,7 @@
 
 This document defines the technical architecture for Gravity Snake, a turn-based puzzle game built with Svelte, TypeScript, and Vite. The architecture emphasizes clean separation between game logic and UI, leveraging Svelte's reactivity for efficient rendering.
 
----
+______________________________________________________________________
 
 ## Architectural Approach
 
@@ -127,7 +127,7 @@ sequenceDiagram
     Components->>User: Render new state
 ```
 
----
+______________________________________________________________________
 
 ## Data Model
 
@@ -281,7 +281,7 @@ type Grid = CellType[][];  // grid[y][x]
 - Y increases downward (rows)
 - Grid bounds: [0, width-1] × [0, height-1]
 
----
+______________________________________________________________________
 
 ## Component Architecture
 
@@ -423,27 +423,35 @@ class GameEngine {
 `processMove(direction: Direction)`:
 
 1. Check isProcessing flag → return early if locked
-2. Set isProcessing = true
-3. Calculate new head position based on direction
-4. Check if food at new head position
-5. If food collected:
-  - Unshift new head (grow snake)
-  - Increment foodCollected counter
-  - Do NOT pop tail
+1. Set isProcessing = true
+1. Calculate new head position based on direction
+1. Check if food at new head position
+1. If food collected:
+
+- Unshift new head (grow snake)
+- Increment foodCollected counter
+- Do NOT pop tail
+
 6. If no food:
-  - Unshift new head
-  - Pop tail (maintain length)
+
+- Unshift new head
+- Pop tail (maintain length)
+
 7. Check collision (Game Over check):
-  - If head collides with obstacle, bounds, or self → trigger game over
-  - If Game Over, skip gravity/exit checks
+
+- If head collides with obstacle, bounds, or self → trigger game over
+- If Game Over, skip gravity/exit checks
+
 8. If not Game Over, Apply gravity:
-  - Loop while snake can fall:
-    - Move all segments down
-    - Check collision again (for hazards/traps) → trigger game over and break if collision
+
+- Loop while snake can fall:
+  - Move all segments down
+  - Check collision again (for hazards/traps) → trigger game over and break if collision
+
 9. If still Playing, Check exit (if snake head at exit) → trigger level complete
-10. Increment moves counter
-11. Emit state change events
-12. Set isProcessing = false
+1. Increment moves counter
+1. Emit state change events
+1. Set isProcessing = false
 
 `applyGravity()`:
 
@@ -493,12 +501,12 @@ if (foodCollected) {
 **Movement Order is Critical:**
 
 1. Check for opposite direction (prevent 180-degree turns)
-2. Calculate new head position
-3. Check for food BEFORE modifying snake
-4. Add new head
-5. Conditionally remove tail based on food collection
-6. Check for immediate collision
-7. Then apply gravity (iterative with collision checks)
+1. Calculate new head position
+1. Check for food BEFORE modifying snake
+1. Add new head
+1. Conditionally remove tail based on food collection
+1. Check for immediate collision
+1. Then apply gravity (iterative with collision checks)
 
 **Opposite Direction Prevention:**
 
@@ -638,7 +646,7 @@ $: moves = $gameState.moves;
 - **CSS classes:** Cell types mapped to classes (`.snake-head`, `.obstacle`, etc.)
 - **No CSS framework:** Vanilla CSS sufficient for MVP
 
----
+______________________________________________________________________
 
 ## Summary
 

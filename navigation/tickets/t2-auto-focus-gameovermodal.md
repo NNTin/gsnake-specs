@@ -61,4 +61,3 @@ onMount(() => {
 - Verify no visual focus indicator appears
 - Test that existing click handlers still work
 - Test with rapid game over → restart cycles
-

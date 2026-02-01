@@ -14,6 +14,7 @@ Verifying game physics (like gravity, collision, and movement) currently relies 
 Implement a robust E2E testing infrastructure that interacts with the game exactly as a player does—via keyboard events—and verifies the outcome by inspecting the DOM (grid cells).
 
 **Scope & Constraints:**
+
 - **Framework:** Playwright with Allure reporting.
 - **Initial Scope:** A Proof of Concept (PoC) test verifying the snake walks off a platform and falls.
 - **Environment:** Tests run against a local build served at the root path (no subpath), effectively testing the build artifact directly.

@@ -94,4 +94,3 @@ flowchart TD
 - Test Escape key in all states
 - Test preventDefault logic for different key types
 - Verify existing directional movement still works
-
