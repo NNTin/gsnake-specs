@@ -1,0 +1,29 @@
+{
+  "id": "1769926174156-sf1bz3",
+  "name": "Level B",
+  "difficulty": "medium",
+  "gridSize": {
+    "width": 15,
+    "height": 15
+  },
+  "snake": [
+    {
+      "x": 5,
+      "y": 3
+    }
+  ],
+  "obstacles": [],
+  "food": [
+    {
+      "x": 10,
+      "y": 6
+    }
+  ],
+  "exit": null,
+  "snakeDirection": "East",
+  "floatingFood": [],
+  "fallingFood": [],
+  "stones": [],
+  "spikes": [],
+  "totalFood": 1
+}
