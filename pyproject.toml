@@ -1,0 +1,49 @@
+[project]
+name = "gsnake-specs"
+version = "1.0.0"
+description = "Documentation and specifications for gSnake project"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+
+dependencies = [
+    "mdformat>=0.7.17",
+    "pymarkdownlnt>=0.9.18",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mdformat>=0.7.17",
+    "pymarkdownlnt>=0.9.18",
+]
+
+[tool.mdformat]
+# mdformat configuration
+wrap = "no"  # Don't wrap lines
+number = false  # Don't change list numbering
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# Installation Instructions
+# ========================
+#
+# To install the Python markdown tooling:
+#
+#   pip install -e .
+#
+# Or install just the dependencies:
+#
+#   pip install mdformat pymarkdownlnt
+#
+# Usage:
+#
+#   # Format markdown files
+#   mdformat --check .
+#
+#   # Fix formatting automatically
+#   mdformat .
+#
+#   # Lint markdown files
+#   pymarkdown scan .
