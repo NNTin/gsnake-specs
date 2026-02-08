@@ -1,208 +1,138 @@
 ## Overview
 
-This document defines the user flows for the WAT Framework proof of concept, where markdown SOPs are automatically translated into n8n workflows. The flows cover the complete journey from creating a workflow definition to validating it works in production.
+This document defines the implemented operating flows for n8n workflow development in `gsnake-n8n/`. The outdated internal "workflow-sync" n8n workflow model is removed. Deployment and synchronization now happen through `tools/scripts/sync-workflows.sh` on the host.
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Claude
-    participant Git
-    participant VolumeSync
+    participant Git as gsnake-n8n repo
+    participant Script as sync-workflows.sh
+    participant Docker as docker cp
+    participant CLI as n8n CLI
     participant n8n
 
-    Note over User,n8n: Flow 1: Bootstrap (One-time)
-    User->>n8n: Manually create docker-volume-sync workflow
-    n8n-->>User: Workflow ready
+    Note over User,n8n: Flow 1: Bootstrap (one-time / environment setup)
+    User->>n8n: Configure credentials and runtime env
+    User->>Script: Verify export/import works
+    Script->>Docker: Copy files to/from container
+    Script->>CLI: n8n export/import workflow
+    CLI-->>n8n: Read/write workflow store
 
-    Note over User,n8n: Flow 2: Create New Workflow
-    User->>Claude: "Create workflow for X"
-    Claude->>Git: Create markdown SOP
-    Claude->>Claude: Generate n8n workflow JSON
-    Claude->>Git: Save JSON to tools/n8n-flows/
-    Claude->>VolumeSync: Trigger sync to n8n
-    VolumeSync->>n8n: Deploy workflow
-    Claude->>n8n: Test workflow via MCP
-    n8n-->>Claude: Execution results
-    Claude-->>User: Report success + results
-    User->>Git: Commit markdown + JSON
+    Note over User,n8n: Flow 2: Create or Update Workflow (primary)
+    User->>Claude: Request new workflow or change
+    Claude->>Git: Update SOP in workflows/
+    Claude->>Git: Update JSON in tools/n8n-flows/{workflow-id}.json
+    Claude->>Script: Run import
+    Script->>Docker: Copy JSON into container
+    Script->>CLI: n8n import:workflow --separate
+    Claude->>n8n: Test via MCP execute_workflow or webhook
+    n8n-->>Claude: Execution result
+    Claude-->>User: Report status and next action
 
-    Note over User,n8n: Flow 3: Fix Broken Workflow
-    User->>Claude: "Workflow failed because..."
-    Claude->>Claude: Analyze and update
-    Claude->>Git: Update markdown/JSON
-    Claude->>VolumeSync: Re-sync to n8n
-    Claude->>n8n: Re-test workflow
-    n8n-->>Claude: New results
-    Claude-->>User: Report outcome
+    Note over User,n8n: Flow 3: Capture Manual UI Edits
+    User->>n8n: Make UI edits/bind credentials
+    User->>Script: Run export
+    Script->>CLI: n8n export:workflow --backup
+    Script->>Git: Update tools/n8n-flows/*.json
+    User->>Git: Review diff and commit
 ```
 
 ______________________________________________________________________
 
-## Flow 1: Bootstrap Volume Sync (One-Time Setup)
+## Flow 1: Bootstrap Environment
 
-**Description**: Initial setup to enable automated workflow deployment
+**Description**: Prepare the environment so workflow sync and execution are reliable.
 
-**Trigger**: Starting the proof of concept for the first time
+**Trigger**: First setup or after environment drift.
 
 **Steps**:
 
-1. User opens the n8n UI in browser
-1. User manually creates the docker-volume-sync workflow using the UI
+1. Ensure n8n container `n8n` is running and reachable.
+1. Ensure required n8n runtime configuration exists (for example code-node builtins/env access when needed).
+1. Create required credentials in n8n UI.
+1. Run `tools/scripts/sync-workflows.sh export` to verify host\<->container transfer and CLI export.
+1. Run `tools/scripts/sync-workflows.sh import` to verify deployment path.
+1. Verify MCP connectivity for `search_workflows`, `get_workflow_details`, and `execute_workflow`.
 
-- Add webhook trigger node with GitHub signature validation
-- Add code node to execute Docker volume sync commands
-- Configure environment variables and credentials
-
-3. User tests the workflow manually to ensure it works
-1. User notes the webhook URL for future use
-1. System is now ready for automated workflow deployment
-
-**Exit**: Volume sync workflow is operational and can be triggered to deploy other workflows
+**Exit**: Sync path and execution path are operational.
 
 ______________________________________________________________________
 
-## Flow 2: Create New Workflow (Primary Flow)
+## Flow 2: Create Or Update Workflow (Primary)
 
-**Description**: Generate and deploy a new n8n workflow from a markdown SOP
+**Description**: Author or modify workflow behavior from SOP to deployed n8n workflow.
 
-**Trigger**: User wants to create a new automation workflow
+**Trigger**: User requests a new workflow or behavior change.
 
 **Steps**:
 
-1. User opens Claude Code and starts a conversation
-1. User requests: "Create a workflow for [specific automation task]"
-1. Claude asks clarifying questions about the workflow requirements
-1. User provides details (inputs, outputs, steps, error handling)
-1. Claude creates a markdown SOP document in the workflows directory
-1. Claude shows the markdown content in chat for user review
-1. Claude uses n8n MCP skills to generate the workflow JSON
-1. Claude saves the JSON file to tools/n8n-flows/
-1. Claude triggers the volume sync workflow to deploy to n8n
-1. Claude uses MCP server to execute the workflow as a test
-1. Claude reports the test results in chat (success/failure, execution details)
-1. User reviews the results in Claude chat
-1. User optionally opens n8n UI to inspect the workflow visually
-1. User commits both the markdown SOP and generated JSON to git
+1. User requests workflow creation/update in Claude.
+1. Claude clarifies requirements and updates SOP in `workflows/...`.
+1. Claude creates/updates workflow JSON in `tools/n8n-flows/{workflow-id}.json` with a stable `id`.
+1. Claude runs `tools/scripts/sync-workflows.sh import`.
+1. n8n imports JSON files; existing IDs are updated in place.
+1. Claude tests execution (MCP execution and/or real trigger).
+1. If UI-side changes were made during validation, run export to recanonicalize JSON in git.
+1. Commit SOP + workflow JSON together.
 
-**Feedback Points**:
+**Feedback points**:
 
-- Claude confirms markdown SOP creation with file path
-- Claude shows generated workflow structure summary
-- Claude reports sync status (deploying to n8n)
-- Claude displays test execution results
-- n8n UI shows the new workflow in the workflows list
+- Import command output (workflow count and success/failure)
+- Test execution result (success/failure, error location)
+- Git diff before commit (SOP + JSON alignment)
 
-**Exit**: Working workflow deployed to n8n and committed to version control
+**Exit**: Tested workflow and documentation are synchronized in git and deployed in n8n.
 
 ______________________________________________________________________
 
-## Flow 3: Validate Workflow
+## Flow 3: Capture Manual n8n UI Changes
 
-**Description**: Test and verify a workflow works correctly
+**Description**: Pull manual changes in n8n UI back into git.
 
-**Trigger**: After creating a new workflow or making changes
+**Trigger**: UI edits, credential binding changes, or emergency fixes performed directly in n8n.
 
 **Steps**:
 
-1. User asks Claude: "Test the [workflow name] workflow"
-1. Claude uses MCP server to execute the workflow
-1. Claude displays execution results in chat
+1. User/maintainer makes change in n8n UI.
+1. Run `tools/scripts/sync-workflows.sh export`.
+1. Review JSON diffs in `tools/n8n-flows/`.
+1. Keep intended changes, discard accidental ones.
+1. Commit canonical JSON updates.
 
-- Execution ID
-- Success/failure status
-- Output data
-- Any errors or warnings
-
-4. User optionally opens n8n UI to see detailed execution logs
-1. User inspects the workflow execution history and node outputs
-1. User confirms the workflow behaves as expected
-
-**Alternative Path - Manual Testing**:
-
-1. User opens n8n UI
-1. User navigates to the workflow
-1. User clicks "Execute Workflow" button
-1. User reviews the execution results in the UI
-1. User returns to Claude to report findings
-
-**Exit**: Workflow validated as working correctly
+**Exit**: Git reflects n8n runtime state.
 
 ______________________________________________________________________
 
-## Flow 4: Fix Broken Workflow
+## Flow 4: Troubleshoot Failed Workflow
 
-**Description**: Iteratively refine a workflow that isn't working correctly
+**Description**: Diagnose and fix workflow failures with deterministic redeploy.
 
-**Trigger**: Workflow test fails or produces incorrect results
-
-**Steps**:
-
-1. User describes the problem to Claude: "The workflow failed because [error details]"
-1. Claude analyzes the error and the current workflow definition
-1. Claude identifies the root cause (logic error, missing config, incorrect node setup)
-1. Claude proposes a fix and asks for confirmation
-1. User approves the fix
-1. Claude updates the markdown SOP to reflect the correction
-1. Claude regenerates the workflow JSON with the fix
-1. Claude saves the updated JSON
-1. Claude triggers volume sync to redeploy
-1. Claude re-tests the workflow via MCP server
-1. Claude reports the new test results
-1. If still broken, repeat from step 1
-1. If working, user commits the fixes to git
-
-**Feedback Points**:
-
-- Claude explains what went wrong and why
-- Claude shows the proposed fix before applying it
-- Claude confirms redeployment status
-- Claude displays new test results with comparison to previous attempt
-
-**Exit**: Workflow fixed and working correctly, changes committed to git
-
-______________________________________________________________________
-
-## Flow 5: Update Existing Workflow
-
-**Description**: Modify an existing workflow with new requirements
-
-**Trigger**: User needs to change how an existing workflow behaves
+**Trigger**: Execution failure, invalid import, missing credentials, or incorrect output.
 
 **Steps**:
 
-1. User tells Claude: "Update [workflow name] to [new requirement]"
-1. Claude reads the current markdown SOP
-1. Claude asks clarifying questions about the changes
-1. User provides details
-1. Claude updates the markdown SOP with the new requirements
-1. Claude regenerates the workflow JSON
-1. Claude shows a summary of what changed
-1. Claude triggers volume sync to deploy the update
-1. Claude tests the updated workflow
-1. Claude reports results
-1. User commits the updated markdown and JSON to git
+1. Inspect n8n execution details and failing node.
+1. Check workflow JSON and relevant SOP section.
+1. Fix JSON/SOP and rerun `sync-workflows.sh import`.
+1. Re-test via MCP execution or real trigger.
+1. If root cause is environment/credential-related, correct n8n config and retest.
+1. Export if UI adjustments were required, then commit.
 
-**Exit**: Workflow updated with new behavior and committed to version control
+**Exit**: Failure resolved and fix captured in git.
 
 ______________________________________________________________________
 
 ## Key Interaction Patterns
 
-**Information Hierarchy**:
+**Information hierarchy**:
 
-- Primary: Claude chat interface (all status, results, errors)
-- Secondary: n8n UI (detailed execution logs, visual workflow inspection)
-- Tertiary: Git commits (version history, change tracking)
+- Primary: Claude + repo files (SOP + JSON)
+- Secondary: Sync script output and n8n CLI behavior
+- Tertiary: n8n UI execution logs and manual activation state
 
-**Feedback Mechanisms**:
+**Control rule**:
 
-- Immediate: Claude chat responses during generation/deployment
-- Validation: Test execution results from MCP server
-- Confirmation: n8n UI showing deployed workflows and execution history
-
-**Error Communication**:
-
-- Claude explains errors in plain language
-- Claude suggests fixes based on error analysis
-- n8n UI provides detailed technical error logs
-- Iterative refinement until resolution
+- Git is the source of truth for workflow definitions
+- n8n UI is runtime/editor surface
+- Export is used to capture manual/runtime metadata back into git

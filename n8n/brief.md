@@ -1,44 +1,46 @@
 ## Summary
 
-This Epic validates the feasibility of the WAT Framework (Workflows, Agents, Tools) by proving that markdown Standard Operating Procedures can be automatically translated into working n8n workflows using AI. The goal is to eliminate the tedious manual process of building n8n workflows through the UI by defining workflows as markdown documents that serve as both documentation and executable specifications. Success means demonstrating one complete end-to-end example: translating the file:workflows/service/docker-volume-sync.md SOP into a functional n8n workflow that can be deployed and executed on a self-hosted n8n instance. This proof of concept will also refine the WAT Framework documentation (file:CLAUDE.md) to eliminate ambiguities and establish clear patterns for future workflow development.
+This Epic validates and documents the implemented WAT workflow model for n8n in `gsnake-n8n/`: markdown SOPs define behavior, workflow JSON files in git define executable artifacts, and deployment is handled by a host-level sync script using n8n CLI import/export. The prior design that used an internal n8n "workflow-sync" workflow has been replaced.
+
+The system now supports a full loop: define/update SOP -> generate/update workflow JSON -> import into n8n -> test execution -> export/canonicalize changes -> commit.
 
 ## Context & Problem
 
-**Who's Affected**\
-nntin, who is building automation pipelines for high-level orchestration (triggering jobs, coordinating workflows, making decisions) using a self-hosted n8n instance.
+**Who is affected**\
+nntin, while building and maintaining automation workflows on a self-hosted n8n instance.
 
-**The Current Pain**\
-Creating n8n workflows manually through the UI is tedious and time-consuming. Each workflow requires clicking through the interface to add nodes, configure parameters, connect components, and test execution. This manual process doesn't scale well as the number of workflows grows, and it creates a disconnect between documentation (markdown SOPs) and implementation (n8n workflows). Starting fresh with n8n, there's an opportunity to establish a better workflow creation process from the beginning.
+**The pain being solved**\
+Manual workflow authoring and edits in the n8n UI are slow, error-prone, and drift from markdown documentation.
 
-**Where This Happens**\
-The gsnake-n8n repository, which implements the WAT Framework architecture:
+**Current architecture in production repo (`gsnake-n8n/`)**
 
-- **Workflows Layer**: Markdown SOPs in file:workflows/ defining what should be done
-- **Agents Layer**: Claude AI orchestrating and making decisions based on workflows
-- **Tools Layer**: n8n workflows in file:tools/n8n-flows/ that execute deterministic operations
+- `workflows/` holds SOPs (for example `workflows/infra/`, `workflows/n8n-webhook/`)
+- `tools/n8n-flows/` holds git-tracked n8n JSON workflow definitions
+- `tools/scripts/sync-workflows.sh` deploys/syncs workflows using `n8n import:workflow` and `n8n export:workflow`
+- MCP server is used for workflow discovery/details/execution testing, not direct workflow writes
 
-**The Vision**\
-Markdown SOPs become the single source of truth. An AI agent reads the SOP, uses n8n MCP skills to generate the corresponding n8n workflow JSON, and deploys it to the self-hosted instance. Workflows stay synchronized with their documentation because they're generated from the same source. Changes to SOPs automatically propagate to n8n workflows, eliminating documentation drift.
+## Confirmed Technical Reality
 
-**Technical Constraints**
+- n8n is self-hosted at `https://n8n.labs.lair.nntin.xyz/`
+- n8n CLI import/export is available in container `n8n`
+- Sync uses `docker cp` + n8n CLI (outside-n8n deployment path)
+- Workflow IDs are preserved on import; re-import with same ID updates in place
+- Workflow files are stored by ID (`tools/n8n-flows/{workflow-id}.json`)
+- Imported workflows are typically inactive by default and activated after validation
+- Credentials/secrets are managed in n8n/environment, not committed into git
 
-- Self-hosted n8n instance at `https://n8n.labs.lair.nntin.xyz/`
-- n8n MCP server provides read-only access (search, execute, get details)
-- Writing workflows requires syncing the Docker volume `nntin-labs-n8n-data`
-- n8n MCP skills plugin enabled for AI-powered workflow generation
+## Success Criteria
 
-**Success Criteria**\
-The proof of concept is successful when:
+1. `brief.md`, `flows.md`, and `plan.md` reflect the implemented external sync architecture.
+1. Workflow lifecycle is documented as git-first with `sync-workflows.sh` (`import`, `export`, `sync`).
+1. Specs document ID-based file naming and in-place workflow updates via stable IDs.
+1. Specs describe MCP correctly as read/details/execute support for testing and validation.
+1. Deprecated internal sync workflow approach is no longer part of the primary design.
 
-1. The file:workflows/service/docker-volume-sync.md SOP is translated to a working n8n workflow using AI
-1. The generated workflow is deployed to the self-hosted n8n instance via volume sync
-1. The workflow executes successfully when triggered by a GitHub webhook
-1. The WAT Framework documentation is refined based on learnings from the POC
+## Explicitly Out Of Scope
 
-**Explicitly Out of Scope**
-
-- Complex workflows with branching logic, loops, or conditional paths
-- Sophisticated error recovery and retry mechanisms
-- UI or web interface for workflow generation (CLI/manual process is acceptable)
-- Production-grade hardening and reliability features
-- Multiple workflow types beyond webhook-triggered service workflows
+- Reintroducing an internal n8n workflow to deploy workflows
+- Direct workflow writes through MCP server
+- Fully automated credential provisioning/rotation in this POC
+- Production-grade rollback orchestration and CI/CD enforcement
+- Complex orchestration patterns beyond current implemented workflows

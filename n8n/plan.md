@@ -1,201 +1,166 @@
 ## Architectural Approach
 
-### Core Architecture Pattern: WAT Framework
+### Core Architecture Pattern: WAT with External Deployment
 
-The system implements a three-layer architecture that separates concerns between probabilistic AI reasoning and deterministic execution:
+The implemented architecture keeps WAT layering but moves deployment mechanics outside n8n workflows.
 
-**Layer 1: Workflows (Documentation as Code)**
+**Layer 1: Workflows (documentation)**
 
-- Markdown SOPs in file:workflows/ serve as the single source of truth
-- Human-readable documentation that is also machine-executable
-- Version controlled in git alongside generated artifacts
+- Markdown SOPs in `gsnake-n8n/workflows/`
+- Current taxonomy includes:
+  - `workflows/infra/` for operational scripts/processes
+  - `workflows/n8n-webhook/` for webhook-driven automations
+- SOPs define intent, inputs, steps, outputs, and operational notes
 
-**Layer 2: Agents (AI Orchestration)**
+**Layer 2: Agents (orchestration)**
 
-- Claude AI reads markdown SOPs and orchestrates the generation pipeline
-- Uses n8n MCP skills to generate valid n8n workflow JSON
-- Handles deployment via MCP server execution
-- Performs validation and iterative refinement
+- Claude reads/updates SOPs and workflow JSON files
+- Claude runs deployment scripts from the host environment
+- Claude validates behavior via MCP execution and/or real triggers
 
-**Layer 3: Tools (Deterministic Execution)**
+**Layer 3: Tools (deterministic execution)**
 
-- n8n workflows execute the actual automation logic
-- n8n CLI (import/export) is used to write/read workflows in the n8n backing store
-- n8n MCP server provides programmatic execution/testing and is used by Claude to trigger the internal sync workflow
+- n8n executes workflow logic
+- n8n CLI (`import:workflow`, `export:workflow`) is the authoritative write/read interface
+- `tools/scripts/sync-workflows.sh` orchestrates file transfer and CLI calls
 
-### Key Architectural Decisions
+### Implemented Architectural Decisions
 
-**1. AI-Powered Workflow Generation**
+**1. Deployment happens outside n8n**
 
-- **Decision**: Use n8n MCP skills plugin for workflow generation
-- **Rationale**: Leverages specialized AI knowledge of n8n's node structure, expression syntax, and workflow patterns
-- **Trade-off**: Depends on AI quality, but eliminates manual JSON authoring
-- **Constraint**: Generated workflows must conform to n8n's JSON schema
+- Implemented with `gsnake-n8n/tools/scripts/sync-workflows.sh`
+- Avoids circular dependency (no workflow that deploys workflows)
+- Keeps deployment concerns in infra tooling, not business workflows
 
-**2. Workflow Sync via n8n CLI (import/export)**
+**2. n8n CLI is the authoritative sync boundary**
 
-- **Decision**: Use `n8n import:workflow` and `n8n export:workflow` as the mechanism to write/read workflows.
-- **Rationale**: Avoids relying on assumptions about n8n auto-loading workflows from files in the data volume.
-- **Trade-off**: Requires validating CLI semantics once (especially around IDs and overwrite behavior).
-- **Constraint**: CLI execution must be possible from within the n8n runtime (or via a controlled fallback).
+- Import: `n8n import:workflow --separate --input=<dir>`
+- Export: `n8n export:workflow --backup --output=<dir>`
+- Script uses `docker cp` + `docker exec` against container `n8n`
 
-**3. Git as Source of Truth**
+**3. Workflow ID is stable primary identity**
 
-- **Decision**: Commit both markdown SOPs and generated JSON to version control
-- **Rationale**: Full reproducibility, change tracking, and collaboration support
-- **Trade-off**: Generated files in git can create noise, but provides audit trail
-- **Constraint**: Requires discipline to keep markdown and JSON synchronized
+- JSON `id` is preserved during import
+- Re-import with same `id` updates in place (no duplicates)
+- File convention: `tools/n8n-flows/{workflow-id}.json`
 
-**4. MCP-Based Deployment (internal-only)**
+**4. Git-first operating model**
 
-- **Decision**: Claude triggers an internal “workflow-sync” workflow via MCP `execute_workflow`.
-- **Rationale**: Keeps the sync mechanism private (no internet-facing webhook) while enabling end-to-end automation.
-- **Trade-off**: Requires a one-time manual bootstrap to create the “workflow-sync” workflow.
-- **Constraint**: MCP server must be accessible and authenticated.
+- Git is canonical source for workflow definitions
+- UI/manual changes are captured with `export`
+- Deployments are applied with `import`
+- `sync` performs export then import to reconcile state
 
-**5. In-Place Workflow Updates (via canonical export)**
+**5. MCP scope is execution and inspection, not deployment writes**
 
-- **Decision**: Preserve workflow IDs by storing *canonical* JSON exported from n8n in git, then re-importing it for updates.
-- **Rationale**: CLI import commonly assigns new IDs on first import; exporting after import captures the n8n-assigned IDs so future imports can overwrite the same workflow.
-- **Trade-off**: First-time creation becomes a two-step: import → export → commit.
-- **Constraint**: The sync workflow must support exporting the affected workflow(s) after import.
+- MCP server is used for:
+  - `search_workflows`
+  - `get_workflow_details`
+  - `execute_workflow`
+- Deployment writes are done through script + CLI path
 
-**6. Filename-Based Naming Convention**
+**6. Activation and safety model**
 
-- **Decision**: Derive workflow names from SOP filenames
-- **Rationale**: Clear, predictable mapping between documentation and implementation
-- **Trade-off**: Filename changes require workflow recreation
-- **Constraint**: Filenames must be valid n8n workflow names
+- Imported workflows are treated as inactive until validated and explicitly activated
+- Runtime verification happens before enabling trigger-based production behavior
 
-**7. n8n Credential System for Secrets**
+**7. Credentials and secrets stay out of git**
 
-- **Decision**: Use n8n's built-in credential management
-- **Rationale**: Secure, centralized secret storage with access control
-- **Trade-off**: Credentials must be manually configured in n8n UI first
-- **Constraint**: Workflows reference credentials by name, not value
+- Credential values are stored in n8n/environment configuration
+- Workflow JSON references credential bindings/keys, not raw secret values
+
+### Deprecated Design
+
+The old internal "workflow-sync" n8n workflow design is deprecated and removed from the primary architecture because it introduced bootstrap and reliability risks.
 
 ### Technical Constraints
 
-**Infrastructure Constraints**:
-
-- Self-hosted n8n instance at `https://n8n.labs.lair.nntin.xyz/`
-- MCP server provides read-only access (search/execute/details); workflow *writes* happen via n8n CLI import/export inside the n8n runtime
-
-**Security Constraints**:
-
-- n8n MCP server authentication via Bearer token
-- Secrets are managed via the n8n credential system (manual one-time binding step in the POC)
-
-**Operational Constraints**:
-
-- Bootstrap dependency: the internal “workflow-sync” workflow must be manually created first
-- No automated rollback mechanism (out of scope for POC)
-- Simple linear workflows only (no complex branching/loops)
+- n8n instance: `https://n8n.labs.lair.nntin.xyz/`
+- Runtime container name: `n8n`
+- Host must have Docker access for `docker exec` and `docker cp`
+- n8n CLI must be available inside container
+- MCP access requires configured bearer-token auth
 
 ______________________________________________________________________
 
 ## Data Model
 
-### Workflow Definition Schema
+### Repository-Level Data Objects
 
-**Markdown SOP Structure** (workflows/service/*.md or workflows/actions/*.md):
+| Object | Path | Purpose | Source of truth |
+| --- | --- | --- | --- |
+| SOP markdown | `gsnake-n8n/workflows/**/*.md` | Functional/operational spec | Git |
+| Workflow JSON | `gsnake-n8n/tools/n8n-flows/*.json` | Deployable n8n definitions | Git |
+| Sync script | `gsnake-n8n/tools/scripts/sync-workflows.sh` | Deployment/export orchestration | Git |
+| Runtime workflow records | n8n backing store | Executable runtime state | n8n (reconciled from git) |
 
-```markdown
-# Workflow Purpose
+### SOP Structure
 
-## Objective
-What this workflow accomplishes
+SOPs are markdown-first and implementation-aware. Typical metadata fields include:
 
-## Inputs
-- Parameter 1: description, type, required/optional
-- Parameter 2: description, type, required/optional
+- `implementation_status`
+- `tool_type`
+- `tool_location`
+- `workflow_id`
+- `last_updated`
+- `dependencies`
+- `tags`
 
-## Steps
-1. Step description
-2. Step description
+Core body sections capture objective, prerequisites, implementation, usage, error handling, and tests.
 
-## Outputs
-- Output 1: description, type
-- Output 2: description, type
-
-## Error Handling
-Expected failures and recovery strategies
-```
-
-**Generated n8n Workflow JSON** (tools/n8n-flows/\*.json):
+### Workflow JSON Canonical Shape
 
 ```json
 {
-  "name": "workflow-name",
-  "nodes": [...],
-  "connections": {...},
-  "settings": {...},
-  "staticData": null,
-  "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "timestamp",
-  "versionId": "uuid"
+  "id": "github-discord-notify",
+  "name": "GitHub to Discord Notification",
+  "active": false,
+  "nodes": [],
+  "connections": {},
+  "settings": {},
+  "versionId": "<n8n-generated>",
+  "shared": []
 }
 ```
 
-### Workflow Metadata Mapping
+### Identity And Naming Rules
 
-| Markdown SOP | n8n Workflow JSON | Derivation Rule |
-| ----------------- | ------------------------------- | ------------------------------------------------ |
-| Filename | `name` field | `docker-volume-sync.md` → `"docker-volume-sync"` |
-| Objective section | Workflow description/notes | Copied verbatim |
-| Inputs section | Webhook/trigger node parameters | Mapped to node configuration |
-| Steps section | Node sequence | Translated to nodes + connections |
-| Outputs section | Final node outputs | Mapped to response/action nodes |
+1. Workflow `id` is the primary key.
+1. JSON filename equals workflow `id` (`{id}.json`).
+1. `name` is human-readable and can change without changing identity.
+1. `versionId` is regenerated by n8n and expected to change over time.
 
-### Workflow Identification Strategy
+### Sync Operation Data Contracts
 
-**Primary Key**: Workflow name (derived from filename)\
-**Secondary Key**: n8n-assigned workflow ID (captured via `n8n export:workflow` after first import)
+**Import (`git -> n8n`)**
 
-**ID Preservation for Updates (POC)**:
+- Input: all `*.json` files in `tools/n8n-flows/`
+- Transfer: host -> container via `docker cp`
+- Apply: `n8n import:workflow --separate`
+- Result: create/update workflows by stable `id`
 
-1. First creation: import the generated JSON (ID may be assigned/normalized by n8n)
-1. Immediately export the workflow from n8n and commit that exported JSON as the *canonical* JSON in git
-1. Subsequent updates: regenerate by starting from the canonical JSON, preserving the workflow ID, then re-import
-1. Re-export after import when you need to confirm/canonicalize (and after manual credential binding)
+**Export (`n8n -> git`)**
 
-### Credential References
+- Extract: `n8n export:workflow --backup`
+- Transfer: container -> host via `docker cp`
+- Result: canonicalized JSON files in `tools/n8n-flows/`
 
-Workflows reference credentials by name, not value:
+**Sync (`export` then `import`)**
 
-```javascript
-// In n8n Code node
-const apiKey = $credentials.github_token;
-const secret = $env.N8N_WEBHOOK_SECRET;
-```
+- Captures runtime/manual edits first
+- Reapplies git-controlled state second
 
-**Credential Naming Convention**:
+### Conflict Resolution Rules
 
-- Service-based: `github_token`, `discord_webhook`, `n8n_api_key`
-- Environment-based: `production_db`, `staging_api`
+- Canonical intent is maintained in git.
+- If UI/runtime edits are intended, export and commit them.
+- If UI/runtime edits are accidental, discard export diff and re-import git state.
 
-### Workflow Sync Data Flow (CLI import/export)
+### Credential And Environment Model
 
-**Authority / conflict rule (POC)**:
-
-- Git is the source of truth
-- Sync primarily applies git → n8n (overwrite n8n state when possible)
-
-**Import (git → n8n)**:
-
-- Input: workflow JSON from git (generated or canonical)
-- Action: `n8n import:workflow`
-- Post-step: export the imported workflow to capture/confirm IDs and metadata
-
-**Export (n8n → git)**:
-
-- Purpose: backup + normalization (capture n8n-assigned IDs and any UI-applied metadata, e.g., credential bindings)
-- Action: `n8n export:workflow`
-
-**Conflict handling (POC)**:
-
-- If git JSON differs from n8n export, the git version is re-imported; the export is used only to update git after import and to capture IDs/metadata.
+- Secrets are not committed in workflow JSON.
+- n8n credentials and environment variables provide secret material at runtime.
+- Workflows depending on code-node crypto/env access require corresponding n8n runtime configuration.
 
 ______________________________________________________________________
 
@@ -203,173 +168,89 @@ ______________________________________________________________________
 
 ```mermaid
 graph TD
-    User[User] -->|Chat| Claude[Claude Agent]
-    Claude -->|Read| SOPs[Markdown SOPs<br/>workflows/]
-    Claude -->|Use| Skills[n8n MCP Skills]
-    Skills -->|Generate| JSON[Workflow JSON<br/>tools/n8n-flows/]
-    Claude -->|Execute| MCP[n8n MCP Server]
-    MCP -->|Trigger| SyncWF[Internal "workflow-sync" workflow]
-    SyncWF -->|Run| CLI[n8n CLI import/export]
-    CLI -->|Read/Write| Store[n8n backing store]
-    Claude -->|Commit| Git[Git Repository]
+    User[User] -->|Request| Claude[Claude Agent]
+    Claude -->|Read/Update| SOP[workflows/*.md]
+    Claude -->|Read/Update| JSON[tools/n8n-flows/*.json]
+    Claude -->|Run| Script[sync-workflows.sh]
+    Script -->|docker cp| Container[n8n container]
+    Script -->|docker exec| CLI[n8n CLI import/export]
+    CLI -->|Read/Write| Store[n8n workflow store]
+    Claude -->|Inspect/Test| MCP[n8n MCP Server]
+    MCP -->|search/details/execute| Store
+    SOP -->|Tracked in| Git[Git]
     JSON -->|Tracked in| Git
-    SOPs -->|Tracked in| Git
-    MCP -->|Test/Execute| n8n
-    n8n -->|Results| Claude
-    Claude -->|Feedback| User
+    Claude -->|Commit| Git
 ```
 
 ### Component Responsibilities
 
-**1. Claude Agent (Orchestrator)**
+**1. Claude Agent**
 
-- **Responsibilities**:
-  - Parse user requests and clarify requirements
-  - Read markdown SOPs from file:workflows/
-  - Invoke n8n MCP skills to generate workflow JSON
-  - Save generated JSON to file:tools/n8n-flows/
-  - Execute the internal “workflow-sync” workflow via MCP server (import/export)
-  - Test deployed workflows via MCP server
-  - Report results and errors to user
-  - Commit changes to git
-- **Interfaces**:
-  - Input: User chat messages
-  - Output: Generated workflows, test results, status updates
-  - Dependencies: n8n MCP skills, n8n MCP server, filesystem, git
+- Maintain SOP + JSON alignment
+- Execute sync script for deploy/export
+- Run validations and summarize outcomes
 
-**2. n8n MCP Skills (Generation Engine)**
+**2. Git Repository (`gsnake-n8n/`)**
 
-- **Responsibilities**:
-  - Generate valid n8n workflow JSON from natural language descriptions
-  - Ensure correct node configuration and connections
-  - Apply n8n best practices and patterns
-  - Validate expression syntax and code snippets
-- **Interfaces**:
-  - Input: Workflow requirements from Claude
-  - Output: n8n workflow JSON structure
-  - Skills used: `n8n-workflow-patterns`, `n8n-node-configuration`, `n8n-code-javascript`, `n8n-expression-syntax`
+- Version control for SOPs, workflows, and scripts
+- Audit trail for workflow behavior changes
 
-**3. n8n MCP Server (Execution Interface)**
+**3. Sync Script (`tools/scripts/sync-workflows.sh`)**
 
-- **Responsibilities**:
-  - Provide programmatic access to n8n instance
-  - Execute workflows on demand
-  - Search for existing workflows
-  - Retrieve workflow details and execution results
-- **Interfaces**:
-  - Endpoint: `https://n8n.labs.lair.nntin.xyz/mcp-server/http`
-  - Authentication: Bearer token
-  - Tools: `search_workflows`, `get_workflow_details`, `execute_workflow`
+- Validate container availability
+- Perform `import`, `export`, or `sync`
+- Handle temporary container paths and cleanup
 
-**4. Internal “workflow-sync” Workflow (Deployment Mechanism)**
+**4. Docker + n8n CLI**
 
-- **Responsibilities**:
-  - Import workflow JSON into n8n using `n8n import:workflow`
-  - Export workflow JSON from n8n using `n8n export:workflow` (backup + canonicalization)
-  - Return a structured summary (what was imported/exported)
-- **Interfaces**:
-  - Trigger: Internal execution via MCP `execute_workflow` (no internet-facing webhook in POC)
-  - Input: action (import/export), target workflow(s)
-  - Output: status + references to exported artifacts
-- **Node Structure (high-level)**:
-  - Trigger node (manual/execute)
-  - Command execution step to run n8n CLI
-  - Response step with structured summary
+- Provide deterministic transfer and apply/export operations
+- Ensure update-in-place behavior by workflow `id`
 
-**(Optional fallback) Docker socket access (avoid for POC)**
+**5. n8n Runtime**
 
-- **Status**: Not used in the primary CLI-based approach. Only consider if CLI import/export cannot be executed from within n8n.
+- Execute workflows
+- Hold active/inactive runtime state and credentials
 
-**5. Git Repository (Version Control)**
+**6. MCP Server**
 
-- **Responsibilities**:
-  - Track markdown SOPs and generated JSON
-  - Provide change history and audit trail
-  - Enable collaboration and rollback
-- **Structure**:
-  - file:workflows/service/ - Service workflow SOPs (webhook endpoints)
-  - file:workflows/actions/ - Action workflow SOPs (custom nodes)
-  - file:tools/n8n-flows/ - Generated n8n workflow JSON files
-  - file:CLAUDE.md - WAT Framework documentation
+- Query workflow inventory/details
+- Execute workflows for verification
+- Does not serve as primary deployment writer
 
-### Integration Points
+### Primary End-To-End Flow
 
-**Claude ↔ n8n MCP Skills**:
+1. Update SOP in `workflows/...`.
+1. Generate or edit workflow JSON in `tools/n8n-flows/{id}.json`.
+1. Run `./tools/scripts/sync-workflows.sh import`.
+1. Test behavior via MCP execution and/or real trigger.
+1. If UI edits were introduced, run export and review diffs.
+1. Commit SOP + JSON together.
 
-- Claude provides workflow requirements in natural language
-- Skills return structured n8n workflow JSON
-- Iterative refinement if validation fails
+### Failure Modes And Recovery
 
-**Claude ↔ n8n MCP Server**:
+**Import/export failure**
 
-- Claude calls `execute_workflow` to trigger the internal “workflow-sync” workflow (import/export)
-- Claude calls `execute_workflow` to test generated workflows
-- Claude calls `search_workflows` to find existing workflows for updates
-- Claude calls `get_workflow_details` to inspect workflow configuration
+- Cause: container unavailable, CLI error, file transfer failure
+- Recovery: fix container/CLI path, rerun script, verify with command output
 
-**Sync workflow ↔ n8n CLI**:
+**Workflow execution failure**
 
-- The internal “workflow-sync” workflow executes `n8n import:workflow` and `n8n export:workflow`
-- CLI import/export is the authoritative mechanism for writing/reading workflows
-- Export output is used for backup + canonicalization into git
+- Cause: node logic bug, missing env/credentials, invalid assumptions
+- Recovery: inspect execution in n8n, update JSON/SOP, re-import and retest
 
-**n8n CLI ↔ n8n backing store**:
+**Credential binding/runtime configuration issues**
 
-- CLI reads/writes workflows in n8n’s backing store (DB)
-- This avoids relying on file-copy semantics in the n8n data directory
-- After import, workflows are available in n8n UI and can be executed via MCP
+- Cause: missing credential or runtime env capability
+- Recovery: configure n8n credentials/env, then rerun validation
 
-**Claude ↔ Git**:
+**Drift between n8n UI and git**
 
-- Claude commits both markdown SOPs and generated JSON
-- Commit messages reference the workflow name and change type
-- Git provides version history for troubleshooting
+- Cause: manual UI edits without export
+- Recovery: run export, review diff, commit intended changes or discard and re-import
 
-### Failure Modes and Recovery
+### Current Implementation Evidence
 
-**Workflow Generation Failure**:
-
-- Cause: Invalid SOP, unclear requirements, AI hallucination
-- Detection: JSON validation fails, n8n rejects workflow
-- Recovery: Claude analyzes error, refines SOP, regenerates
-
-**Sync Workflow Failure (CLI execution)**:
-
-- Cause: CLI not available/allowed, missing permissions, incorrect paths, unexpected CLI semantics
-- Detection: Command execution step returns error
-- Recovery: Manual CLI run on host/container to unblock; adjust sync workflow accordingly
-
-**Deployment Failure**:
-
-- Cause: n8n can't parse JSON, missing credentials, invalid node configuration
-- Detection: Workflow doesn't appear in n8n UI or shows errors
-- Recovery: Claude inspects workflow details, fixes JSON, re-syncs
-
-**Test Execution Failure**:
-
-- Cause: Workflow logic error, missing inputs, credential issues
-- Detection: MCP `execute_workflow` returns error or unexpected output
-- Recovery: Claude analyzes execution logs, updates workflow, re-deploys
-
-### Bootstrap Sequence
-
-**Initial Setup** (One-time, manual):
-
-1. User manually creates the internal “workflow-sync” workflow in n8n UI
-1. User verifies the workflow can run n8n CLI import/export commands in the n8n runtime
-1. User sets up any required n8n credentials (manual binding step happens after first deploy)
-1. User configures MCP server authentication
-
-**First Workflow Generation** (Automated):
-
-1. User requests workflow creation via Claude chat
-1. Claude reads markdown SOP
-1. Claude generates workflow JSON using MCP skills
-1. Claude saves JSON to file:tools/n8n-flows/
-1. Claude executes the internal “workflow-sync” workflow via MCP (Import)
-1. Claude executes the internal “workflow-sync” workflow via MCP (Export) to capture canonical JSON with IDs
-1. User performs any one-time credential binding in n8n UI (if required)
-1. Claude re-exports if credential bindings changed
-1. Claude tests workflow via MCP
-1. Claude reports results to user
-1. User commits markdown + canonical JSON to git
+- `gsnake-n8n/tools/scripts/sync-workflows.sh` exists and is operational.
+- `gsnake-n8n/tools/n8n-flows/` contains deployed workflow JSON files.
+- `gsnake-n8n/workflows/infra/n8n-sync.md` documents the sync process.
+- `gsnake-n8n/workflows/n8n-webhook/notify-discord.md` is implemented and tracked.
