@@ -34,6 +34,11 @@ git config --unset core.hooksPath
 
 The pre-commit hook runs the following checks:
 
+1. **Secret Scan**:
+   - Fails if `.env` is tracked by git
+   - Scans tracked files in the working tree for exact matches of `.env` values
+   - Reports only `KEY` + `file:line` without printing secret values
+   - Optional allowlist file: `.github/hooks/env-key-allowlist.txt` (one key per line)
 1. **Format Check**: `mdformat --check .`
 1. **Lint Check**: `pymarkdown scan .`
 

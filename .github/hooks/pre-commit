@@ -7,6 +7,9 @@ set -e  # Exit immediately on first failure
 
 echo "Running pre-commit checks for gsnake-specs..."
 
+# Prevent committing secrets from .env into tracked files.
+.github/hooks/check-env-secrets.sh
+
 # Check if Python is available
 if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
     echo "Error: Python is not installed or not in PATH"
