@@ -10,9 +10,9 @@
 **Rationale:**
 
 - **Single source of truth**: All visual design lives in one place (gsnake-web-ui)
-- **Hot-reload support**: Source consumption enables Vite to watch and reload changes instantly
+- **Unified toolchain**: Aligning both apps on Svelte 5 reduces integration risk for shared UI primitives
 - **Simplified dependency management**: npm workspaces handles internal linking automatically
-- **No build overhead**: gsnake-web-ui consumed as source files, no compilation step needed
+- **Reliable consumption**: gsnake-web-ui provides precompiled outputs so consumers don’t need to compile Svelte from dependencies
 
 **Trade-offs:**
 
@@ -20,6 +20,15 @@
 - ✅ Faster development (hot-reload across packages)
 - ❌ Larger checkout size for standalone gsnake-web (includes both packages)
 - ❌ Breaking changes in gsnake-web-ui immediately affect gsnake-web-app
+
+### Svelte Version Alignment
+
+**Decision:** Upgrade gsnake-web-app to Svelte 5 so gsnake-web and gsnake-editor share the same major Svelte version.
+
+**Rationale:**
+
+- Avoids cross-version compilation/runtime mismatches when sharing UI primitives
+- Simplifies gsnake-web-ui packaging and consumption
 
 ### Dependency Resolution Strategy
 
@@ -34,8 +43,8 @@
 **Standalone Mode:**
 
 - gsnake-editor detects absence of root repository
-- Configures dependency: `"gsnake-web-ui": "git+https://github.com/NNTin/gsnake-web.git#main:packages/gsnake-web-ui"`
-- npm fetches latest from main branch during install
+- Downloads a gsnake-web-ui snapshot archive from GitHub (main branch) into `vendor/gsnake-web-ui`
+- Configures dependency: `"gsnake-web-ui": "./vendor/gsnake-web-ui"`
 
 **Rationale:**
 
@@ -80,23 +89,21 @@
 - ❌ Requires adding missing FallingFood sprite
 - ❌ Build fails if sprites and types diverge
 
-### Source Consumption Pattern
+### Precompiled Consumption Pattern
 
-**Decision:** gsnake-web-ui consumed as source files (CSS, SVG, Svelte) rather than built artifacts.
+**Decision:** gsnake-web-ui is built into precompiled JS (for components) and emitted CSS/assets, so consuming apps do not need to compile `.svelte` files from dependencies.
 
 **Rationale:**
 
-- Enables hot-reload in consuming applications
-- Simpler build pipeline (no compilation step for gsnake-web-ui)
-- Better tree-shaking (consumers' bundlers optimize imports)
-- Vite handles Svelte compilation in consuming apps
+- Improves cross-repo reliability (standalone editor doesn’t need special Vite/Svelte dependency compilation config)
+- Still supports rapid iteration in root-repo mode by running gsnake-web-ui in watch mode during development
 
 **Trade-offs:**
 
-- ✅ Faster development iteration
-- ✅ Simpler build configuration
-- ❌ Consuming apps must support Svelte and CSS imports
-- ❌ No pre-compiled distribution (always requires build tooling)
+- ✅ Consumers import plain JS + CSS
+- ✅ Reduces Svelte-tooling coupling across repos
+- ❌ Adds a build step for gsnake-web-ui
+- ❌ Dev workflow must keep gsnake-web-ui outputs up to date (watch)
 
 ______________________________________________________________________
 
@@ -205,7 +212,7 @@ Detection logic:
 **Standalone mode dependency:**
 
 ```json
-"gsnake-web-ui": "git+https://github.com/NNTin/gsnake-web.git#main:packages/gsnake-web-ui"
+"gsnake-web-ui": "./vendor/gsnake-web-ui"
 ```
 
 ______________________________________________________________________
@@ -217,15 +224,15 @@ ______________________________________________________________________
 **Single Entry Point (index.js):**
 
 ```javascript
-// Styles
-export { default as appStyles } from './styles/app.css?inline';
+// Apply base styles by default (side-effect import)
+import './styles/app.css';
 
 // Assets
 export { default as spritesUrl } from './assets/sprites.svg?url';
 
-// Components
-export { default as Modal } from './components/Modal.svelte';
-export { default as Overlay } from './components/Overlay.svelte';
+// Components (precompiled outputs)
+export { default as Modal } from './dist/Modal.js';
+export { default as Overlay } from './dist/Overlay.js';
 ```
 
 **Import Pattern in Consuming Apps:**
@@ -323,7 +330,7 @@ import { Modal, Overlay, appStyles, spritesUrl } from 'gsnake-web-ui';
 
 1. Checkout repository
 1. Run auto-detection script (preinstall hook)
-1. Run `npm install` (fetches gsnake-web-ui via git or file)
+1. Run `npm install` (uses local file dependency in root-repo mode; uses vendored snapshot in standalone mode)
 1. Build gsnake-editor
 1. Run tests
 
@@ -359,6 +366,6 @@ ______________________________________________________________________
 1. **E2E Tests Must Pass:** Root repository integration tests validate complete system
 1. **Standalone CI Must Pass:** Both gsnake-web and gsnake-editor must build independently
 1. **Hot-Reload Required:** Changes in gsnake-web-ui must be immediately visible in development
-1. **Source Consumption Only:** No pre-built distribution of gsnake-web-ui
+1. **Precompiled Distribution:** gsnake-web-ui ships compiled JS + CSS/assets so consumers do not compile Svelte sources from dependencies
 
 &#160;

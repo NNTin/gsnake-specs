@@ -44,11 +44,11 @@ ______________________________________________________________________
 1. Developer navigates to gsnake-editor directory and runs `npm install`
 1. Auto-detection script runs as preinstall hook
 1. Script detects standalone mode (no parent `.git` or sibling gsnake-web)
-1. Script fetches gsnake-web-ui from git repository using git dependency URL
-1. npm installs gsnake-web-ui from the git source
-1. Dependencies are resolved and installed
+1. Script detects standalone mode and downloads a gsnake-web-ui snapshot archive from GitHub (main branch)
+1. Script extracts the archive into a local vendor directory
+1. npm installs gsnake-web-ui via a local file dependency to the vendored directory
 
-**Outcome:** gsnake-editor is ready for standalone development with gsnake-web-ui fetched from the main branch
+**Outcome:** gsnake-editor is ready for standalone development with a vendored gsnake-web-ui snapshot from the main branch
 
 ______________________________________________________________________
 
@@ -62,12 +62,12 @@ ______________________________________________________________________
 1. Developer makes changes to styles or assets
 1. Developer has both gsnake-web-app and gsnake-editor dev servers running
 1. Vite hot-reload detects changes in gsnake-web-ui source files
-1. Changes are immediately reflected in both running applications without rebuild
+1. Changes are immediately reflected in both running applications (dev workflow keeps gsnake-web-ui build/watch in sync so the experience is effectively hot-reload)
 1. Developer visually verifies changes in both the game interface and level editor
 1. Developer commits changes to gsnake-web repository
 1. Changes are automatically available to gsnake-editor on next pull from main
 
-**Outcome:** Artstyle updates propagate instantly during development and automatically to all consumers via git dependency
+**Outcome:** Artstyle updates propagate instantly during root-repo development and flow to standalone consumers via updated vendored snapshots (pulled from main)
 
 ______________________________________________________________________
 
@@ -118,8 +118,8 @@ ______________________________________________________________________
 1. CI checks out gsnake-editor repository
 1. CI runs npm install
 1. Auto-detection script detects standalone mode
-1. Script fetches gsnake-web-ui from git repository (latest main branch)
-1. npm installs dependencies including gsnake-web-ui
+1. Script downloads and vendors gsnake-web-ui from GitHub (latest main branch snapshot)
+1. npm installs dependencies including the vendored gsnake-web-ui via local file dependency
 1. CI builds gsnake-editor
 1. CI runs tests
 1. If gsnake-web-ui introduced breaking changes, build or tests may fail
@@ -204,9 +204,9 @@ The validation check ensures perfect synchronization between WASM game object ty
 
 gsnake-editor always uses latest gsnake-web-ui from main branch, accepting that breaking changes may require updates. This keeps the design system unified without version drift.
 
-### Source Consumption
+### Precompiled Consumption
 
-gsnake-web-ui is consumed as source files (CSS, SVG, Svelte) rather than built artifacts, simplifying the build process and enabling better hot-reload.
+For cross-repo reliability, gsnake-web-ui components are consumed as precompiled JS (while still providing shared styles and assets). In root-repo development, the workflow preserves an effectively hot-reload experience by keeping gsnake-web-ui outputs in sync during development.
 
 ### npm Workspaces
 
