@@ -356,9 +356,9 @@ mv ../.git.disabled ../.git
 
 For implementation details specific to each submodule, see:
 
-- **gsnake-levels** (Rust): [gsnake-levels/README.md](../../gsnake-levels/README.md) - Local Override Detection section
-- **gsnake-web** (JavaScript): [gsnake-web/README.md](../../gsnake-web/README.md) - Auto-Detection Behavior section
-- **gsnake-editor** (JavaScript): [gsnake-editor/README.md](../../gsnake-editor/README.md) - Standalone Build section
+- **gsnake-levels** (Rust): [gsnake-levels/README.md](https://github.com/NNTin/gsnake-levels/blob/main/README.md) - Local Override Detection section
+- **gsnake-web** (JavaScript): [gsnake-web/README.md](https://github.com/NNTin/gsnake-web/blob/main/README.md) - Auto-Detection Behavior section
+- **gsnake-editor** (JavaScript): [gsnake-editor/README.md](https://github.com/NNTin/gsnake-editor/blob/main/README.md) - Standalone Build section
 
 ## Troubleshooting
 
@@ -520,7 +520,7 @@ cd engine/bindings/wasm
 wasm-pack build
 ```
 
-**Details:** [gsnake-core/README.md](../../gsnake-core/README.md)
+**Details:** [gsnake-core/README.md](https://github.com/NNTin/gSnake/blob/main/gsnake-core/README.md)
 
 #### gsnake-levels (Rust Level Management)
 
@@ -539,7 +539,7 @@ cargo test --verbose
 cargo run --example render_level
 ```
 
-**Details:** [gsnake-levels/README.md](../../gsnake-levels/README.md)
+**Details:** [gsnake-levels/README.md](https://github.com/NNTin/gsnake-levels/blob/main/README.md)
 
 #### gsnake-web (Svelte Web UI)
 
@@ -564,7 +564,7 @@ npm test
 npm run dev
 ```
 
-**Details:** [gsnake-web/README.md](../../gsnake-web/README.md)
+**Details:** [gsnake-web/README.md](https://github.com/NNTin/gsnake-web/blob/main/README.md)
 
 **Note:** Standalone mode expects prebuilt WASM artifacts in the main branch. These are built and committed via CI, then downloaded during install.
 
@@ -591,7 +591,7 @@ npm test
 npm run dev
 ```
 
-**Details:** [gsnake-editor/README.md](../../gsnake-editor/README.md)
+**Details:** [gsnake-editor/README.md](https://github.com/NNTin/gsnake-editor/blob/main/README.md)
 
 **Note:** Integration tests require gsnake-web to be running (either locally or at `VITE_GSNAKE_WEB_URL`). Unit tests work standalone.
 
@@ -610,7 +610,7 @@ ls tasks/
 find . -name "*.md" | wc -l
 ```
 
-**Details:** [gsnake-specs/README.md](../../gsnake-specs/README.md)
+**Details:** [gsnake-specs/README.md](../README.md)
 
 **Note:** No build process required - pure Markdown documentation.
 
