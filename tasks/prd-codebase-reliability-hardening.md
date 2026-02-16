@@ -182,3 +182,41 @@ This PRD defines a single reliability-hardening feature set that turns those fin
 - For grid-size caps, what exact max bound should be treated as stable API contract versus internal safety guard?
 - Should error aggregation in `gsnake-levels` be introduced incrementally per command or enforced repo-wide in one pass?
 - Is this PRD executed as one epic with multiple tickets, or split into phased PRDs aligned to the Findings action plan weeks?
+
+## 10. Final Verification Status (2026-02-16)
+
+### Implemented Outcomes
+
+- Critical panic and input-validation risks identified in the 2026-02-15 findings were addressed through the reliability backlog (`US-001` through `US-023` in `scripts/ralph/prd.json`).
+- Runtime hardening delivered:
+  - Engine malformed-state handling now returns structured errors instead of panicking.
+  - Grid-size validation now rejects non-positive and oversized dimensions before allocations.
+  - Web startup level parsing now normalizes invalid query input deterministically.
+- Contract hardening delivered:
+  - Canonical `LevelDefinition` schema established under `contracts/`.
+  - Editor server, web, and E2E validation paths were aligned to schema-driven/shared utilities.
+  - Drift-detection tests were added so schema/consumer mismatches fail in CI.
+- Test hardening delivered:
+  - Missing web component tests and keyboard edge-case tests were added.
+  - Contract coverage expanded for missing cell variants and core stone-interaction matrix cases.
+  - Editor validation edge-case API tests were added.
+- Tooling hardening delivered:
+  - High-risk CLI/levels panic paths were replaced with contextual `Result`-based errors.
+  - `validate-levels-toml` now aggregates multiple issues in deterministic output.
+- Documentation hardening delivered:
+  - Physics order dependency, LevelDefinition optional-field semantics, and Wasm frame-emission contract are now documented in authoritative locations linked from source.
+
+### Verification Evidence
+
+- Integrated CI evidence is tracked in `scripts/test/result.txt`.
+- Latest sweep summary at time of this status update: `29 passed, 0 failed` (completed on 2026-02-16, CET) across root and submodule workflows.
+- Reliability backlog implementation status is tracked in `scripts/ralph/progress.txt` with per-story evidence and checks.
+
+### Residual Risks (Out of Scope for This Reliability Sweep)
+
+- Performance-focused findings remain and require separate work:
+  - Solver throughput/caching optimization.
+  - Input lock/unlock behavior refinement.
+  - WASM startup-load optimization.
+- Security/devops low-priority findings (for example stricter CORS/health checks/process supervision) remain tracked as follow-up technical debt.
+- Additional long-tail `unwrap()/expect()` removal outside targeted high-impact paths remains ongoing technical debt, not a single-milestone goal.
