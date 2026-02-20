@@ -42,4 +42,15 @@ git ls-files -z '*.md' | xargs -0 mdformat --check
 echo "Linting Markdown files with pymarkdownlnt..."
 pymarkdown scan .
 
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+    echo "Error: npm is not installed or not in PATH"
+    echo "Please install Node.js to use this pre-commit hook"
+    exit 1
+fi
+
+# Run link check (fails on broken links)
+echo "Checking links with npm run check:links..."
+npm run check:links
+
 echo "All pre-commit checks passed!"
