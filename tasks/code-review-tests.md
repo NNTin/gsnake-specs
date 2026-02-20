@@ -28,7 +28,7 @@ ______________________________________________________________________
 
 **Impact:** Any future regression in CORS, the editor API, or the web server startup process would produce no signal from this test file. The file occupies two test slots in the suite and creates the misleading impression that integration behavior is verified.
 
-**Suggestion:** Replace the unconditional-pass pattern with Vitest's `test.skipIf` using an environment variable guard, or convert to proper E2E tests in Playwright (where both servers are guaranteed to be running). If the intent is purely to document expected integration points, delete the file and add a comment in the Playwright spec.
+**Suggestion:** Convert to proper E2E tests in Playwright (where both servers are guaranteed to be running).
 
 ______________________________________________________________________
 
@@ -136,7 +136,7 @@ ______________________________________________________________________
 
 **Impact:** If the drawing bug were reintroduced — a stale snake render persisting on screen from a previous level — this test would still pass because it never opens the browser.
 
-**Suggestion:** Either rename and reframe the test as an API-storage test and move it to the server tests, or add a proper browser-based regression test: load a level with snake at positions A, load a second level with snake at positions B, and assert that cells at positions A no longer have the `.is-snake-segment` class in the rendered grid.
+**Suggestion:** Add a proper browser-based regression test: load a level with snake at positions A, load a second level with snake at positions B, and assert that cells at positions A no longer have the `.is-snake-segment` class in the rendered grid.
 
 ______________________________________________________________________
 
