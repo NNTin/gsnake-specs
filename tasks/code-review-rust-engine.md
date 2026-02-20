@@ -8,25 +8,6 @@ ______________________________________________________________________
 
 ## Findings
 
-### [SEVERITY: High] Integer overflow when computing `MAX_GRID_CELLS` boundary in 32-bit test helper
-
-**File:** `/home/nntin/git/gSnake/gsnake-core/engine/core/src/engine.rs:900-906`
-**Issue:** The test `test_engine_creation_accepts_maximum_valid_grid_size` casts `MAX_GRID_CELLS` (a `usize` equal to `2_000_000`) to `i32` with `as`:
-
-```rust
-level.grid_size = GridSize::new(MAX_GRID_CELLS as i32, 1);
-```
-
-`MAX_GRID_CELLS` is `2_000_000`, which fits in `i32` (`i32::MAX` is about `2.1 billion`), so this specific constant is safe. However, the adjacent test at line 912 does:
-
-```rust
-level.grid_size = GridSize::new((MAX_GRID_CELLS as i32) + 1, 1);
-```
-
-If `MAX_GRID_CELLS` were ever raised above `i32::MAX` (e.g., to match a 64-bit `usize`), both of these casts would silently produce negative values, the `validate_grid_size` check at line 381 (`width <= 0`) would then accept the truncated negative value, and the test assertions would become meaningless. The Cargo.toml workspace already suppresses the `cast-possible-truncation` and `cast-possible-wrap` clippy lints (lines 38-40), so no automated warning will fire.
-**Impact:** If `MAX_GRID_CELLS` is increased beyond `i32::MAX`, the boundary tests silently stop testing what they claim, and the guard against oversized grids breaks. This is a latent defect today but a correctness bug if the constant is tuned upward.
-**Suggestion:** Use `i32::try_from(MAX_GRID_CELLS).expect("MAX_GRID_CELLS must fit in i32")` in the test helpers, and add a `const _: () = assert!(MAX_GRID_CELLS <= i32::MAX as usize);` compile-time assertion in `engine.rs`.
-
 ______________________________________________________________________
 
 ### [SEVERITY: High] Stone push ignores food and exit cells as blocking terrain
@@ -60,7 +41,7 @@ ______________________________________________________________________
 
 In practice `can_snake_fall` halts the snake one cell *above* food, so the snake never actually lands on the food. However, the comment at line 91-97 says food "acts as platform for snake", which relies on this pre-stop invariant holding in all cases. The single-segment snake case is fine, but with a multi-segment snake that has segments at varying columns, only the failing column stops the snake — food in a non-head column still acts as a floor. That food item is never eaten even if the snake slides along it.
 **Impact:** Medium gameplay impact — food can become permanently unreachable if a multi-segment snake's body lands beside it, though in practice the food-as-platform stops the snake before overlap rather than during.
-**Suggestion:** After each step of gravity-induced movement, run `check_and_eat_food` on the new head position. Alternatively, document explicitly that food is only consumed by deliberate moves, not by gravity, and reflect this in the level design guidelines.
+**Suggestion:** Document at relevant code part explicitly that food is only consumed by deliberate moves, not by gravity, and reflect this in the level design guidelines.
 
 ______________________________________________________________________
 
@@ -78,7 +59,7 @@ pub fn on_frame(&mut self, callback: Function) {
 
 `on_frame` itself has no return type, so there is no natural way to surface the error. However, if `emit_frame` fails (e.g., JSON serialization of the initial frame fails, or the JS callback throws), the caller receives no indication. The JS side will observe that `onFrame` returned `undefined` and may believe the callback was registered successfully and the initial frame was delivered, when in fact it was not.
 **Impact:** Serialization failures or JS callback errors during initial frame delivery are invisible to the JS caller, potentially causing the UI to display a stale or empty state with no error to act on.
-**Suggestion:** Change `on_frame` to return `Result<(), JsValue>` and propagate the error. If changing the signature is undesirable (e.g., due to API stability concerns), log the error to the browser console via `web_sys::console::error_1`.
+**Suggestion:** Change `on_frame` to return `Result<(), JsValue>` and propagate the error. If changing the signature is required, log the error to the browser console via `web_sys::console::error_1` instead. We want to have a stable API..
 
 ______________________________________________________________________
 
@@ -155,7 +136,7 @@ For a column of N falling food items stacked vertically, the recursion depth is 
 
 In practice, game levels will have at most a handful of falling food items, making a stack overflow unreachable from real gameplay. However, the function is called inside `can_object_fall` which is called inside a loop in `apply_gravity_to_falling_food`, so the recursion runs repeatedly per gravity step.
 **Impact:** Low for real game grids. A malformed or adversarial level with a very tall column of falling food could cause a stack overflow.
-**Suggestion:** Replace the recursive check with an iterative scan downward, or add a depth counter with a reasonable cap (e.g., grid height).
+**Suggestion:** Add a depth counter with a reasonable cap (e.g., grid height).
 
 ______________________________________________________________________
 
