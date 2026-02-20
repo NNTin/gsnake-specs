@@ -40,8 +40,7 @@ graph TB
     subgraph External["External Services"]
         GH["GitHub
         git push · CI"]
-        Discord["Discord
-        notifications"]
+        Notification["e.g. Discord notifications"]
     end
 
     Human["👤 Human
@@ -53,7 +52,7 @@ graph TB
     (host-gateway:8765)"| Bridge
     Bridge -->|"POST /webhook/ralph-loop
     {action:done}"| N8N
-    N8N -->|"Discord webhook"| Discord
+    N8N -->|"workflow execute:<br>n8n notification flow"| Notification
     Repo -->|"git push"| GH
 ```
 
@@ -77,9 +76,11 @@ graph LR
         State["state.json
         {running, iteration,
         jobId, tool, ...}"]
+        EH["exit handler
+        (spawned process 'close' event)"]
     end
 
-    subgraph Host["Host Process"]
+    subgraph HostProcess["Host Process"]
         Claude["claude CLI"]
         Codex["codex CLI"]
         Log["archive/iteration_N_*.log"]
@@ -97,10 +98,11 @@ graph LR
     Claude -->|"stdout+stderr"| Log
     Codex -->|"stdout+stderr"| Log
 
-    Claude -->|"on exit
-    POST callback"| N8N
-    Codex -->|"on exit
-    POST callback"| N8N
+    Claude -->|"process exit"| EH
+    Codex -->|"process exit"| EH
+    EH --> State
+    EH -->|"POST /webhook/ralph-loop
+    {action:done, success, jobId}"| N8N
 
     P -->|"reads"| PRD["scripts/ralph/prd.json"]
 ```
@@ -122,19 +124,19 @@ stateDiagram-v2
     CheckPRD --> Done_NothingToDo : all passes == true
     CheckPRD --> StartIteration : remaining stories > 0
 
-    Done_NothingToDo --> [*] : Discord "nothing to do"
+    Done_NothingToDo --> [*] : Notification "nothing to do"
 
     StartIteration --> InFlight : POST /run-ralph → status "started"
     StartIteration --> Done_MaxHit : POST /run-ralph → status "max_iterations_reached"
     StartIteration --> Done_Error : POST /run-ralph → network/bridge error
 
-    Done_MaxHit --> [*] : Discord "max iterations reached"
-    Done_Error --> [*] : Discord "error"
+    Done_MaxHit --> [*] : Notification "max iterations reached"
+    Done_Error --> [*] : Notification "error"
 
     InFlight --> CheckStatus : POST /webhook/ralph-loop<br>action "done", success true
     InFlight --> Done_IterationFailed : POST /webhook/ralph-loop<br>action "done", success false
 
-    Done_IterationFailed --> [*] : Discord "iteration failed"
+    Done_IterationFailed --> [*] : Notification "iteration failed"
 
     note right of InFlight
         n8n execution ends here.
@@ -196,26 +198,43 @@ Internal state transitions inside `ralph-bridge.js`.
 
 ```mermaid
 stateDiagram-v2
+    direction TB
+
     [*] --> Idle : startup<br>(load state.json)
 
+    %% --- Core lifecycle ---
     Idle --> Running : POST /run-ralph<br>(not at maxIterations)
-    Idle --> Idle : POST /run-ralph<br>{status "already_running"} — impossible from Idle
-    Idle --> Idle : POST /run-ralph<br>{status "max_iterations_reached"}
 
-    Running --> Running : POST /run-ralph → {status "already_running"}
-    Running --> Idle : CLI exits (success)<br>→ POST callbackUrl {success true}
-    Running --> Idle : CLI exits (error)<br>→ POST callbackUrl {success false}
-    Running --> Idle : RALPH_ITERATION_TIMEOUT exceeded<br>→ POST callbackUrl {timedOut true}
+    Running --> Success : CLI exits (success)
+    Running --> Error : CLI exits (error)
+    Running --> Timeout : RALPH_ITERATION_TIMEOUT exceeded
 
+    Success --> Idle : POST callbackUrl<br>{success  true}
+    Error --> Idle : POST callbackUrl<br>{success  false}
+    Timeout --> Idle : POST callbackUrl<br>{timedOut  true}
+
+    %% --- Guards / rejections ---
+    Idle --> MaxReached : POST /run-ralph<br>{max_iterations_reached}
+    MaxReached --> Idle
+
+    Running --> AlreadyRunning : POST /run-ralph<br>{already_running}
+    AlreadyRunning --> Running
+
+    %% --- Read-only operations (grouped) ---
+    state "Read-only APIs" as ReadOnly {
+        [*] --> Status
+        Status --> PRD
+    }
+
+    Idle --> ReadOnly : GET /status<br>GET /prd.json
+    Running --> ReadOnly : GET /status<br>GET /prd.json
+    ReadOnly --> Idle
+
+    %% --- Persistence note ---
     note right of Running
         state persisted to state.json
         on every transition
     end note
-
-    Idle --> Idle : GET /status (read-only)
-    Running --> Running : GET /status (read-only)
-    Idle --> Idle : GET /prd.json (read-only)
-    Running --> Running : GET /prd.json (read-only)
 ```
 
 ______________________________________________________________________
@@ -248,7 +267,7 @@ graph TB
     subgraph CloudServices["Cloud / External"]
         N8N_URL["https://n8n.labs.lair.nntin.xyz<br>(reverse proxy → n8n:5678)"]
         GH["github.com/NNTin/gSnake"]
-        DC["Discord webhook"]
+        NS["Notification Service"]
     end
 
     BridgeSvc -->|"reads"| CLAUDE_MD
@@ -259,6 +278,129 @@ graph TB
 
     N8N_Container -->|"HTTP :8765<br>via host-gateway"| BridgeSvc
     BridgeSvc -->|"POST callback<br>via public URL"| N8N_URL
-    N8N_Container -->|"Discord"| DC
+    N8N_Container -->|"notifies"| NS
     Claude_Bin -->|"git push"| GH
+```
+
+______________________________________________________________________
+
+## 7. n8n Workflow Node Graph
+
+Concrete n8n node layout for both action paths. Full SOP in
+`gsnake-n8n/workflows/n8n-workflow/ralph-loop.md`.
+
+```mermaid
+flowchart TD
+    WH(["Webhook<br>POST /webhook/ralph-loop<br>responds 200 immediately"])
+    SW{"Switch<br>$json.body.action"}
+
+    %% ── start path ──────────────────────────────────────────────────────
+    GS["HTTP GET /status<br>host-gateway:8765"]
+    IR{"running == true?"}
+    NOOP(["● stop — already busy"])
+    GPS["HTTP GET /prd.json<br>host-gateway:8765"]
+    CRS["Code: count remaining<br>passes == false"]
+    ADS{"remaining == 0?"}
+    DN(["● Notification<br>nothing to do"])
+    PRS["HTTP POST /run-ralph<br>{ tool · maxIterations · callbackUrl }"]
+    RJS{"status == 'started'?"}
+    DS(["● Notification<br>Ralph started · N remaining"])
+
+    %% ── done path ───────────────────────────────────────────────────────
+    SF{"$json.body.success?"}
+    DF(["● Notification<br>iteration failed<br>exitCode · timedOut"])
+    GPD["HTTP GET /prd.json<br>host-gateway:8765"]
+    CRD["Code: count remaining"]
+    ADD{"remaining == 0?"}
+    DC(["● Notification<br>all stories complete!"])
+    PRD["HTTP POST /run-ralph<br>{ tool · maxIterations · callbackUrl }"]
+    RJD{"status?"}
+    DM(["● Notification<br>max iterations reached"])
+    DI(["● Notification<br>iteration N done · M remaining"])
+
+    %% ── shared ──────────────────────────────────────────────────────────
+    DE(["● Notification<br>error"])
+    WAIT(["⏳ n8n execution ends here<br>bridge runs CLI · holds state<br>bridge POSTs callback on exit"])
+
+    %% ── routing ─────────────────────────────────────────────────────────
+    WH --> SW
+    SW -- "start" --> GS
+    SW -- "done"  --> SF
+    SW -- "other" --> DE
+
+    GS --> IR
+    IR -- "true"  --> NOOP
+    IR -- "false" --> GPS
+    GPS --> CRS --> ADS
+    ADS -- "yes" --> DN
+    ADS -- "no"  --> PRS
+    PRS --> RJS
+    RJS -- "yes" --> DS
+    RJS -- "no"  --> DE
+
+    SF -- "false<br>(timedOut or exitCode ≠ 0)" --> DF
+    SF -- "true" --> GPD
+    GPD --> CRD --> ADD
+    ADD -- "yes" --> DC
+    ADD -- "no"  --> PRD
+    PRD --> RJD
+    RJD -- "max_iterations_reached" --> DM
+    RJD -- "error / already_running" --> DE
+    RJD -- "started" --> DI
+
+    DS --> WAIT
+    DI --> WAIT
+    WAIT -. "POST {action:'done', success, iteration, tool, exitCode, ...}" .-> WH
+```
+
+______________________________________________________________________
+
+## 8. Notification Workflow
+
+The `● Notification` terminal nodes in the ralph-loop workflow each trigger a
+separate n8n **notification workflow** via an internal Execute Workflow call.
+That workflow owns the notification pipeline and can fan out to multiple
+channels independently of the ralph-loop logic.
+
+```mermaid
+flowchart TD
+    %% ── callers (ralph-loop terminal nodes) ─────────────────────────────
+    subgraph RalphLoop["ralph-loop workflow (callers)"]
+        DN(["● nothing to do"])
+        DS(["● Ralph started"])
+        DI(["● iteration N done"])
+        DF(["● iteration failed"])
+        DC(["● all stories complete!"])
+        DM(["● max iterations reached"])
+        DE(["● error"])
+    end
+
+    %% ── notification workflow ────────────────────────────────────────────
+    subgraph NotifWorkflow["notification workflow"]
+        NW(["Execute Workflow Trigger"])
+        FMT["Code: format message<br>(title · body · color · emoji)"]
+        SW2{{"Switch<br>channel routing"}}
+
+        subgraph Discord["Discord (active)"]
+            DC_NODE["HTTP POST<br>discord webhook URL<br>{embeds: [{title, description, color}]}"]
+        end
+
+        subgraph Future["Future channels (inactive)"]
+            WA["WhatsApp"]
+            TG["Telegram"]
+            ETC["…"]
+        end
+
+        OK(["● done"])
+    end
+
+    %% ── routing ──────────────────────────────────────────────────────────
+    DN & DS & DI & DF & DC & DM & DE -->|"Execute Workflow<br>{event, payload}"| NW
+    NW --> FMT
+    FMT --> SW2
+    SW2 -- "discord" --> DC_NODE
+    SW2 -. "whatsapp (future)" .-> WA
+    SW2 -. "telegram (future)" .-> TG
+    SW2 -. "other (future)" .-> ETC
+    DC_NODE --> OK
 ```
