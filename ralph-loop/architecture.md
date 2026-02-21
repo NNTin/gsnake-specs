@@ -44,13 +44,16 @@ graph TB
     end
 
     Human["👤 Human
-    or automation"] -->|"POST /webhook/ralph-loop
+    or automation"] -->|"POST /webhook/ralph
+    Authorization: Bearer token
     {action:start}"| N8N
     N8N -->|"GET /status
     GET /prd.json
+    POST /reset
     POST /run-ralph
     (host-gateway:8765)"| Bridge
-    Bridge -->|"POST /webhook/ralph-loop
+    Bridge -->|"POST /webhook/ralph
+    Authorization: Bearer token
     {action:done}"| N8N
     N8N -->|"workflow execute:<br>n8n notification flow"| Notification
     Repo -->|"git push"| GH
@@ -73,9 +76,15 @@ graph LR
         GET"]
         R["/run-ralph
         POST"]
+        RST["/reset
+        POST"]
+        AB["/abort
+        POST"]
         State["state.json
         {running, iteration,
-        jobId, tool, ...}"]
+        jobId, tool,
+        callbackUrl,
+        childPid, ...}"]
         EH["exit handler
         (spawned process 'close' event)"]
     end
@@ -88,10 +97,14 @@ graph LR
 
     N8N -->|"check if busy"| S
     N8N -->|"read PRD"| P
+    N8N -->|"reset counter (start path)"| RST
     N8N -->|"start iteration"| R
+    N8N -->|"abort in-flight (manual)"| AB
 
     S --> State
     R --> State
+    RST --> State
+    AB --> State
 
     R -->|"async spawn"| Claude
     R -->|"async spawn"| Codex
@@ -100,8 +113,11 @@ graph LR
 
     Claude -->|"process exit"| EH
     Codex -->|"process exit"| EH
+    AB -->|"SIGTERM → SIGKILL"| Claude
+    AB -->|"SIGTERM → SIGKILL"| Codex
     EH --> State
-    EH -->|"POST /webhook/ralph-loop
+    EH -->|"POST /webhook/ralph
+    Authorization: Bearer token
     {action:done, success, jobId}"| N8N
 
     P -->|"reads"| PRD["scripts/ralph/prd.json"]
@@ -111,38 +127,62 @@ ______________________________________________________________________
 
 ## 3. n8n Webhook State Machine
 
-The n8n workflow is driven entirely by webhook callbacks. There is no polling or sleep.
+The n8n workflow is driven entirely by Execute Workflow callbacks. There is no polling or sleep.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
 
-    Idle --> CheckStatus : POST /webhook/ralph-loop<br>action "start"
-    CheckStatus --> Idle : running == true<br>(already busy, no-op)
+    Idle --> CheckStatus : Execute Workflow trigger<br>action "start"
+    CheckStatus --> AlreadyRunning : running == true
     CheckStatus --> CheckPRD : running == false
 
-    CheckPRD --> Done_NothingToDo : all passes == true
-    CheckPRD --> StartIteration : remaining stories > 0
+    AlreadyRunning --> [*] : Notification "already running" (info)
 
-    Done_NothingToDo --> [*] : Notification "nothing to do"
+    CheckPRD --> Done_NothingToDo : all passes == true
+    CheckPRD --> ResetCounter : remaining stories > 0
+
+    Done_NothingToDo --> [*] : Notification "nothing to do" (success)
+
+    ResetCounter --> StartIteration : POST /reset → ok
+    ResetCounter --> Done_Error : POST /reset → error
 
     StartIteration --> InFlight : POST /run-ralph → status "started"
     StartIteration --> Done_MaxHit : POST /run-ralph → status "max_iterations_reached"
+    StartIteration --> Done_AlreadyRunning : POST /run-ralph → status "already_running"
     StartIteration --> Done_Error : POST /run-ralph → network/bridge error
 
-    Done_MaxHit --> [*] : Notification "max iterations reached"
-    Done_Error --> [*] : Notification "error"
+    Done_MaxHit --> [*] : Notification "max iterations reached" (warning)
+    Done_AlreadyRunning --> [*] : Notification "already running" (info)
+    Done_Error --> [*] : Notification "error" (error)
 
-    InFlight --> CheckStatus : POST /webhook/ralph-loop<br>action "done", success true
-    InFlight --> Done_IterationFailed : POST /webhook/ralph-loop<br>action "done", success false
+    InFlight --> CheckStatus2 : Execute Workflow trigger<br>action "done", success true
+    InFlight --> Done_IterationFailed : Execute Workflow trigger<br>action "done", success false
 
-    Done_IterationFailed --> [*] : Notification "iteration failed"
+    Done_IterationFailed --> [*] : Notification "iteration failed/aborted" (error/warning)
+
+    CheckStatus2 --> CheckPRD2 : running == false
+    CheckPRD2 --> Done_AllComplete : all passes == true
+    CheckPRD2 --> NextIteration : remaining stories > 0
+
+    Done_AllComplete --> [*] : Notification "all stories complete!" (success)
+
+    NextIteration --> InFlight : POST /run-ralph → status "started"
+    NextIteration --> Done_MaxHit : POST /run-ralph → status "max_iterations_reached"
+    NextIteration --> Done_AlreadyRunning : POST /run-ralph → status "already_running"
+    NextIteration --> Done_Error : POST /run-ralph → error
 
     note right of InFlight
         n8n execution ends here.
-        Bridge holds state.
+        Bridge holds state (callbackUrl + childPid persisted).
         Bridge POSTs callback when
         claude/codex exits.
+    end note
+
+    note right of ResetCounter
+        Only on the "start" path.
+        Resets iteration counter to 0.
+        Not called on "done" continuation path.
     end note
 ```
 
@@ -150,22 +190,26 @@ ______________________________________________________________________
 
 ## 4. Iteration Sequence
 
-One complete iteration from n8n's perspective, showing all HTTP hops.
+One complete iteration from n8n's perspective, showing all HTTP hops and auth headers.
 
 ```mermaid
 sequenceDiagram
     participant H as 👤 Human
-    participant N as n8n<br/>/webhook/ralph-loop
+    participant A as ralph-loop-auth<br/>/webhook/ralph
+    participant N as ralph-loop<br/>(Execute Workflow)
     participant B as ralph-bridge<br/>:8765
     participant C as claude CLI
     participant G as GitHub
 
-    H->>N: POST {action:"start", tool:"claude", maxIterations:20}
-    N->>N: Respond 200 immediately (async)
+    H->>A: POST {action:"start", tool:"claude", maxIterations:20}<br/>Authorization: Bearer token
+    A->>A: Validate token → 202 Accepted
+    A->>N: Execute Workflow (async, fire-and-forget)
     N->>B: GET /status
-    B-->>N: {running:false, iteration:2}
+    B-->>N: {running:false, iteration:0}
     N->>B: GET /prd.json
     B-->>N: {userStories:[...3 with passes:false...]}
+    N->>B: POST /reset
+    B-->>N: {status:"reset"}
     N->>B: POST /run-ralph {tool:"claude", callbackUrl, maxIterations:20}
     B-->>N: {status:"started", jobId:"uuid"}
     Note over B,C: Async — n8n execution ends here
@@ -179,10 +223,11 @@ sequenceDiagram
     C->>B: exit 0
     B->>B: state.running=false, iteration++, save state
 
-    B->>N: POST /webhook/ralph-loop {action:"done", jobId, success:true, iteration:3}
-    N->>N: Respond 200
+    B->>A: POST /webhook/ralph {action:"done", jobId, success:true, iteration:1}<br/>Authorization: Bearer token
+    A->>A: Validate token → 202 Accepted
+    A->>N: Execute Workflow (async)
     N->>B: GET /status
-    B-->>N: {running:false, iteration:3}
+    B-->>N: {running:false, iteration:1}
     N->>B: GET /prd.json
     B-->>N: {userStories:[...2 with passes:false...]}
     N->>B: POST /run-ralph {tool:"claude", callbackUrl, maxIterations:20}
@@ -200,18 +245,20 @@ Internal state transitions inside `ralph-bridge.js`.
 stateDiagram-v2
     direction TB
 
-    [*] --> Idle : startup<br>(load state.json)
+    [*] --> Idle : startup<br>(load state.json + PID liveness check)
 
     %% --- Core lifecycle ---
     Idle --> Running : POST /run-ralph<br>(not at maxIterations)
 
-    Running --> Success : CLI exits (success)
-    Running --> Error : CLI exits (error)
+    Running --> Success : CLI exits (exit 0)
+    Running --> Error : CLI exits (non-zero)
     Running --> Timeout : RALPH_ITERATION_TIMEOUT exceeded
+    Running --> Aborted : POST /abort received
 
-    Success --> Idle : POST callbackUrl<br>{success  true}
-    Error --> Idle : POST callbackUrl<br>{success  false}
-    Timeout --> Idle : POST callbackUrl<br>{timedOut  true}
+    Success --> Idle : POST callbackUrl<br>{success true}
+    Error --> Idle : POST callbackUrl<br>{success false}
+    Timeout --> Idle : POST callbackUrl<br>{timedOut true}
+    Aborted --> Idle : POST callbackUrl<br>{aborted true}
 
     %% --- Guards / rejections ---
     Idle --> MaxReached : POST /run-ralph<br>{max_iterations_reached}
@@ -219,6 +266,14 @@ stateDiagram-v2
 
     Running --> AlreadyRunning : POST /run-ralph<br>{already_running}
     AlreadyRunning --> Running
+
+    %% --- Reset ---
+    Idle --> Idle : POST /reset<br>{status reset}
+    Running --> RejectReset : POST /reset<br>{409 conflict}
+    RejectReset --> Running
+
+    %% --- Abort idempotent ---
+    Idle --> Idle : POST /abort<br>{status idle}
 
     %% --- Read-only operations (grouped) ---
     state "Read-only APIs" as ReadOnly {
@@ -232,8 +287,17 @@ stateDiagram-v2
 
     %% --- Persistence note ---
     note right of Running
-        state persisted to state.json
-        on every transition
+        state persisted to state.json on
+        every transition: running, jobId,
+        iteration, maxIterations, startedAt,
+        tool, callbackUrl, childPid
+    end note
+
+    note right of Idle
+        On startup: if state.running=true,
+        run kill -0 on stored childPid.
+        If dead: reset + POST callback
+        with {success:false} to callbackUrl.
     end note
 ```
 
@@ -247,13 +311,18 @@ Physical deployment topology and network paths.
 graph TB
     subgraph Host["Ubuntu Host (WSL2 / Linux)"]
         subgraph SystemD["systemd"]
-            BridgeSvc["ralph-bridge.service<br>→ node ralph-bridge.js<br>  0.0.0.0:8765"]
+            BridgeSvc["ralph-bridge.service<br>→ node $RALPH_N8N_PATH/tools/scripts/ralph-bridge.js<br>  0.0.0.0:8765<br>  EnvironmentFile: ralph-bridge.env"]
         end
 
         subgraph Repo["~/git/gSnake"]
             CLAUDE_MD["scripts/ralph/CLAUDE.md<br>(agent prompt)"]
             PRD["scripts/ralph/prd.json<br>(story state)"]
             Archive["scripts/ralph/archive/<br>(iteration logs)"]
+        end
+
+        subgraph N8NSubmodule["~/git/gSnake/gsnake-n8n  (submodule)"]
+            BridgeJS["tools/scripts/ralph-bridge.js"]
+            StateFile["tools/scripts/ralph-bridge.state.json<br>(runtime — gitignored)"]
         end
 
         Claude_Bin["/usr/local/bin/claude"]
@@ -273,11 +342,13 @@ graph TB
     BridgeSvc -->|"reads"| CLAUDE_MD
     BridgeSvc -->|"reads/writes"| PRD
     BridgeSvc -->|"writes"| Archive
+    BridgeSvc -->|"reads/writes"| StateFile
     BridgeSvc -->|"spawns"| Claude_Bin
     BridgeSvc -->|"spawns"| Codex_Bin
+    BridgeSvc -.->|"is"| BridgeJS
 
     N8N_Container -->|"HTTP :8765<br>via host-gateway"| BridgeSvc
-    BridgeSvc -->|"POST callback<br>via public URL"| N8N_URL
+    BridgeSvc -->|"POST callback<br>Bearer token<br>via public URL"| N8N_URL
     N8N_Container -->|"notifies"| NS
     Claude_Bin -->|"git push"| GH
 ```
@@ -286,78 +357,86 @@ ______________________________________________________________________
 
 ## 7. n8n Workflow Node Graph
 
-Concrete n8n node layout for both action paths. Full SOP in
-`gsnake-n8n/workflows/n8n-workflow/ralph-loop.md`.
+Concrete n8n node layout for both action paths. Entry point is the Execute Workflow Trigger
+(fed by `ralph-loop-auth`). Full SOP in `gsnake-n8n/workflows/n8n-workflow/ralph-loop.md`.
 
 ```mermaid
 flowchart TD
-    WH(["Webhook<br>POST /webhook/ralph-loop<br>responds 200 immediately"])
-    SW{"Switch<br>$json.body.action"}
+    EWT(["Execute Workflow Trigger<br>(called by ralph-loop-auth)<br>receives original request body"])
+    SW{{"Switch<br>$json.action"}}
 
     %% ── start path ──────────────────────────────────────────────────────
     GS["HTTP GET /status<br>host-gateway:8765"]
-    IR{"running == true?"}
-    NOOP(["● stop — already busy"])
+    IR{{"running == true?"}}
+    BUSY(["● Notify(info)<br>already running"])
     GPS["HTTP GET /prd.json<br>host-gateway:8765"]
     CRS["Code: count remaining<br>passes == false"]
-    ADS{"remaining == 0?"}
-    DN(["● Notification<br>nothing to do"])
+    ADS{{"remaining == 0?"}}
+    DN(["● Notify(success)<br>nothing to do"])
+    RST["HTTP POST /reset<br>host-gateway:8765"]
     PRS["HTTP POST /run-ralph<br>{ tool · maxIterations · callbackUrl }"]
-    RJS{"status == 'started'?"}
-    DS(["● Notification<br>Ralph started · N remaining"])
+    RJS{{"status?"}}
+    DS(["● Notify(info)<br>Ralph started · N remaining"])
+    DM_S(["● Notify(warning)<br>max iterations reached"])
+    DB_S(["● Notify(info)<br>already running"])
 
     %% ── done path ───────────────────────────────────────────────────────
-    SF{"$json.body.success?"}
-    DF(["● Notification<br>iteration failed<br>exitCode · timedOut"])
+    SF{{"$json.success?"}}
+    DF(["● Notify(error/warning)<br>iteration failed · aborted"])
     GPD["HTTP GET /prd.json<br>host-gateway:8765"]
     CRD["Code: count remaining"]
-    ADD{"remaining == 0?"}
-    DC(["● Notification<br>all stories complete!"])
+    ADD{{"remaining == 0?"}}
+    DC(["● Notify(success)<br>all stories complete!"])
     PRD["HTTP POST /run-ralph<br>{ tool · maxIterations · callbackUrl }"]
-    RJD{"status?"}
-    DM(["● Notification<br>max iterations reached"])
-    DI(["● Notification<br>iteration N done · M remaining"])
+    RJD{{"status?"}}
+    DM(["● Notify(warning)<br>max iterations reached"])
+    DI(["● Notify(info)<br>iteration N done · M remaining"])
+    DB_D(["● Notify(info)<br>already running"])
 
     %% ── shared ──────────────────────────────────────────────────────────
-    DE(["● Notification<br>error"])
-    WAIT(["⏳ n8n execution ends here<br>bridge runs CLI · holds state<br>bridge POSTs callback on exit"])
+    DE(["● Notify(error)<br>error"])
+    WAIT(["⏳ n8n execution ends here<br>bridge runs CLI · holds state<br>(callbackUrl + childPid persisted)<br>bridge POSTs callback on exit"])
 
     %% ── routing ─────────────────────────────────────────────────────────
-    WH --> SW
+    EWT --> SW
     SW -- "start" --> GS
     SW -- "done"  --> SF
     SW -- "other" --> DE
 
     GS --> IR
-    IR -- "true"  --> NOOP
+    IR -- "true"  --> BUSY
     IR -- "false" --> GPS
     GPS --> CRS --> ADS
     ADS -- "yes" --> DN
-    ADS -- "no"  --> PRS
+    ADS -- "no"  --> RST
+    RST --> PRS
     PRS --> RJS
-    RJS -- "yes" --> DS
-    RJS -- "no"  --> DE
+    RJS -- "started"               --> DS
+    RJS -- "max_iterations_reached" --> DM_S
+    RJS -- "already_running"        --> DB_S
+    RJS -- "error"                  --> DE
 
-    SF -- "false<br>(timedOut or exitCode ≠ 0)" --> DF
-    SF -- "true" --> GPD
+    SF -- "false" --> DF
+    SF -- "true"  --> GPD
     GPD --> CRD --> ADD
     ADD -- "yes" --> DC
     ADD -- "no"  --> PRD
     PRD --> RJD
     RJD -- "max_iterations_reached" --> DM
-    RJD -- "error / already_running" --> DE
-    RJD -- "started" --> DI
+    RJD -- "already_running"        --> DB_D
+    RJD -- "error"                  --> DE
+    RJD -- "started"                --> DI
 
     DS --> WAIT
     DI --> WAIT
-    WAIT -. "POST {action:'done', success, iteration, tool, exitCode, ...}" .-> WH
+    WAIT -. "POST {action:'done', success, iteration, tool, exitCode, aborted, ...}" .-> EWT
 ```
 
 ______________________________________________________________________
 
 ## 8. Notification Workflow
 
-The `● Notification` terminal nodes in the ralph-loop workflow each trigger a
+The `● Notify(...)` terminal nodes in the ralph-loop workflow each trigger a
 separate n8n **notification workflow** via an internal Execute Workflow call.
 That workflow owns the notification pipeline and can fan out to multiple
 channels independently of the ralph-loop logic.
@@ -367,9 +446,10 @@ flowchart TD
     %% ── callers (ralph-loop terminal nodes) ─────────────────────────────
     subgraph RalphLoop["ralph-loop workflow (callers)"]
         DN(["● nothing to do"])
+        DBUSY(["● already running"])
         DS(["● Ralph started"])
         DI(["● iteration N done"])
-        DF(["● iteration failed"])
+        DF(["● iteration failed/aborted"])
         DC(["● all stories complete!"])
         DM(["● max iterations reached"])
         DE(["● error"])
@@ -395,7 +475,7 @@ flowchart TD
     end
 
     %% ── routing ──────────────────────────────────────────────────────────
-    DN & DS & DI & DF & DC & DM & DE -->|"Execute Workflow<br>{event, payload}"| NW
+    DN & DBUSY & DS & DI & DF & DC & DM & DE -->|"Execute Workflow<br>{event, payload, level}"| NW
     NW --> FMT
     FMT --> SW2
     SW2 -- "discord" --> DC_NODE
