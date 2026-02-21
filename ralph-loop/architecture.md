@@ -161,7 +161,11 @@ stateDiagram-v2
 
     Done_IterationFailed --> [*] : Notification "iteration failed/aborted" (error/warning)
 
+    CheckStatus2 --> AlreadyRunning2 : running == true
     CheckStatus2 --> CheckPRD2 : running == false
+
+    AlreadyRunning2 --> [*] : Notification "already running" (info)
+
     CheckPRD2 --> Done_AllComplete : all passes == true
     CheckPRD2 --> NextIteration : remaining stories > 0
 
@@ -223,7 +227,7 @@ sequenceDiagram
     C->>B: exit 0
     B->>B: state.running=false, iteration++, save state
 
-    B->>A: POST /webhook/ralph {action:"done", jobId, success:true, iteration:1}<br/>Authorization: Bearer token
+    B->>A: POST /webhook/ralph {action:"done", jobId, success:true, iteration:1, tool:"claude", callbackUrl, maxIterations:20}<br/>Authorization: Bearer token
     A->>A: Validate token → 202 Accepted
     A->>N: Execute Workflow (async)
     N->>B: GET /status
@@ -248,7 +252,7 @@ stateDiagram-v2
     [*] --> Idle : startup<br>(load state.json + PID liveness check)
 
     %% --- Core lifecycle ---
-    Idle --> Running : POST /run-ralph<br>(not at maxIterations)
+    Idle --> Running : POST /run-ralph<br>(check iteration < maxIterations first, then increment)
 
     Running --> Success : CLI exits (exit 0)
     Running --> Error : CLI exits (non-zero)
@@ -383,6 +387,9 @@ flowchart TD
     %% ── done path ───────────────────────────────────────────────────────
     SF{{"$json.success?"}}
     DF(["● Notify(error/warning)<br>iteration failed · aborted"])
+    GSD["HTTP GET /status<br>host-gateway:8765"]
+    IRD{{"running == true?"}}
+    BUSY_D(["● Notify(info)<br>already running"])
     GPD["HTTP GET /prd.json<br>host-gateway:8765"]
     CRD["Code: count remaining"]
     ADD{{"remaining == 0?"}}
@@ -417,7 +424,10 @@ flowchart TD
     RJS -- "error"                  --> DE
 
     SF -- "false" --> DF
-    SF -- "true"  --> GPD
+    SF -- "true"  --> GSD
+    GSD --> IRD
+    IRD -- "true"  --> BUSY_D
+    IRD -- "false" --> GPD
     GPD --> CRD --> ADD
     ADD -- "yes" --> DC
     ADD -- "no"  --> PRD
@@ -429,7 +439,7 @@ flowchart TD
 
     DS --> WAIT
     DI --> WAIT
-    WAIT -. "POST {action:'done', success, iteration, tool, exitCode, aborted, ...}" .-> EWT
+    WAIT -. "POST {action:'done', success, iteration, tool, callbackUrl, maxIterations, ...}" .-> EWT
 ```
 
 ______________________________________________________________________
