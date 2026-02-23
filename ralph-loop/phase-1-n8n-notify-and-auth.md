@@ -196,7 +196,7 @@ Condition: `{{ $json.valid }}` equals `true`.
 
 #### Node 4 — Execute Workflow: ralph-loop
 
-Type: `n8n-nodes-base.executeWorkflow`, typeVersion 1.1.
+Type: `n8n-nodes-base.executeWorkflow`, typeVersion 1.2.
 
 ```json
 {
@@ -216,7 +216,9 @@ Type: `n8n-nodes-base.executeWorkflow`, typeVersion 1.1.
 Key: `waitForSubWorkflow: false` — fire-and-forget. The ralph-loop is long-running
 and async; we must not block the HTTP response waiting for it.
 
-Input data: the `$json.body` from the Code node (the original request payload).
+Input data: map `workflowInputs.value` to `{{ $json.body }}` so the child workflow receives
+the original payload fields at the top level (`action`, `tool`, `maxIterations`, etc.)
+instead of the `{ valid, body }` wrapper from the auth Code node.
 
 **Important n8n detail:** When using `waitForSubWorkflow: false`, the Execute Workflow
 node fires the sub-workflow asynchronously. The calling workflow continues to the next
